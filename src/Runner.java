@@ -1,23 +1,29 @@
+import java.awt.Canvas;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.util.Collections;
+
+import javax.swing.JFrame;
+
 import org.lwjgl.LWJGLException;
 import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
  
-public class FullscreenExample {
- 
-	/** position of quad */
-	float x = 0, y = 0, z = 5;
-	float wane = 0, roll = 0, pitch = 0, yaw = 0;
-	/** angle of quad rotation */
-	float rotation = 0f;
-	float speed = 0.01f;
-	float rotspeed = 0.1f;
-	float movedamp = 1.0f;
-	float rotdamp = 1.0f;
+public class Runner 
+{
+	//TODO: convert current degrees measures into radians for easier access
+	//Use player position and rotation values instead of ones in this class
+	//note: OpenGL actually uses degrees for their matrix transforms.
+	
+	//a list of blocks to use / world reference
+	World world;
+	Player player;
  
 	/** time at last frame */
 	long lastFrame;
@@ -29,15 +35,27 @@ public class FullscreenExample {
 	
 	/** is VSync Enabled */
 	boolean vsync;
+	
+	GUICanvas canvas;
  
 	public void start() {
 		try {
+			world = new World(this);
+			player = world.player;
 			Display.setDisplayMode(new DisplayMode(800, 600));
 			Display.create();
 		} catch (LWJGLException e) {
 			e.printStackTrace();
 			System.exit(0);
 		}
+		
+		JFrame f = new JFrame();
+		canvas = new GUICanvas(this);
+		f.add(canvas);
+		f.setLocation(200,100);
+		f.setSize(50,200);
+		f.setDefaultCloseOperation(3);
+		f.setVisible(true);
  
 		initGL(); // init OpenGL
 		getDelta(); // call once before loop to initialise lastFrame
@@ -49,6 +67,8 @@ public class FullscreenExample {
  
 			update(delta);
 			renderGL();
+			
+			canvas.paint(canvas.getGraphics());
  
 			Display.update();
 			Display.sync(60); // cap fps to 60fps
@@ -59,27 +79,27 @@ public class FullscreenExample {
  
 	public void update(int delta) 
 	{
-		// rotate quad
-		//need to add dampening
-		
 		if (Keyboard.isKeyDown(Keyboard.KEY_I)) 
 		{
-			pitch += rotspeed * delta;
-			if (pitch > 90.0f)
-				pitch = 90.0f;
+			player.pitch += player.rotspeed * delta;
+			if (player.pitch > Math.PI/2)
+				player.pitch = (float)Math.PI/2;
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_K)) 
 		{
-			pitch -= rotspeed * delta;
-			if (pitch < -90.0f)
-				pitch = -90.0f;
+			player.pitch -= player.rotspeed * delta;
+			if (player.pitch < -Math.PI/2)
+				player.pitch = -(float)Math.PI/2;
 		}
 		
-		if (Keyboard.isKeyDown(Keyboard.KEY_J)) yaw += rotspeed * delta;
-		if (Keyboard.isKeyDown(Keyboard.KEY_L)) yaw -= rotspeed * delta;
+		if (Keyboard.isKeyDown(Keyboard.KEY_J)) player.yaw += player.rotspeed * delta;
+		if (Keyboard.isKeyDown(Keyboard.KEY_L)) player.yaw -= player.rotspeed * delta;
 		
-		if (Keyboard.isKeyDown(Keyboard.KEY_U)) roll -= rotspeed * delta;
-		if (Keyboard.isKeyDown(Keyboard.KEY_O)) roll += rotspeed * delta;
+		if (player.yaw < -Math.PI) player.yaw += 2*(float)Math.PI;
+		if (player.yaw > Math.PI) player.yaw -= 2*(float)Math.PI;
+		
+		//if (Keyboard.isKeyDown(Keyboard.KEY_U)) roll -= rotspeed * delta;
+		//if (Keyboard.isKeyDown(Keyboard.KEY_O)) roll += rotspeed * delta;
  
 		/*
 			x' = x cos a cos b - y (cos a cos c sin b + sin a sin c) + z (cos a sin b sin c - cos c sin a)
@@ -95,7 +115,7 @@ public class FullscreenExample {
 		  && ( ( Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_S) ) )
 		  && ( ( Keyboard.isKeyDown(Keyboard.KEY_Q) || Keyboard.isKeyDown(Keyboard.KEY_E) ) ) )
 			
-			movedamp = 1.0f/3.0f;
+			player.movedamp = 1.0f/3.0f;
 		
 		else if ( ( (Keyboard.isKeyDown(Keyboard.KEY_A) || Keyboard.isKeyDown(Keyboard.KEY_D)) 
 		    && ( Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_S) ) )
@@ -104,44 +124,53 @@ public class FullscreenExample {
 		  || ( ( Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_S) ) 
 			&& ( Keyboard.isKeyDown(Keyboard.KEY_Q) || Keyboard.isKeyDown(Keyboard.KEY_E) ) ) )
 			
-			movedamp = 1.0f/2.0f;
+			player.movedamp = 1.0f/2.0f;
 		
 		else 
-			movedamp = 1.0f/1.0f;
+			player.movedamp = 1.0f/1.0f;
 		
 		//dampening: multiply by the dampening factor.
 		
 		if (Keyboard.isKeyDown(Keyboard.KEY_A)) 
 		{
-			z -= movedamp * speed * Math.cos( Math.toRadians(yaw+90) ) * delta;
-			x -= movedamp * speed * Math.sin( Math.toRadians(yaw+90) ) * delta;
+			player.pos.z -= player.movedamp * player.speed * Math.cos( player.yaw+Math.PI/2 ) * delta;
+			player.pos.x -= player.movedamp * player.speed * Math.sin( player.yaw+Math.PI/2 ) * delta;
 		}
 		else if (Keyboard.isKeyDown(Keyboard.KEY_D)) 
 		{
-			z -= movedamp * speed * delta * Math.cos( Math.toRadians(yaw-90) );
-			x -= movedamp * speed * delta * Math.sin( Math.toRadians(yaw-90) );
+			player.pos.z -= player.movedamp * player.speed * delta * Math.cos( player.yaw-Math.PI/2 );
+			player.pos.x -= player.movedamp * player.speed * delta * Math.sin( player.yaw-Math.PI/2 );
 		}
 
 		if (Keyboard.isKeyDown(Keyboard.KEY_W)) 
 		{
-			x -= movedamp * speed * delta * Math.cos(Math.toRadians(pitch)) * Math.sin(Math.toRadians(yaw));
-			y += movedamp * speed * delta * Math.sin(Math.toRadians(pitch));
-			z -= movedamp * speed * delta * Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch));
+			player.pos.x -= player.movedamp * player.speed * delta * Math.cos(player.pitch) * Math.sin(player.yaw);
+			player.pos.y += player.movedamp * player.speed * delta * Math.sin(player.pitch);
+			player.pos.z -= player.movedamp * player.speed * delta * Math.cos(player.pitch) * Math.cos(player.yaw);
 		}
 		else if (Keyboard.isKeyDown(Keyboard.KEY_S)) 
 		{
-			x += movedamp * speed * delta * Math.cos(Math.toRadians(pitch)) * Math.sin(Math.toRadians(yaw));
-			y -= movedamp * speed * delta * Math.sin(Math.toRadians(pitch));
-			z += movedamp * speed * delta * Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch));
+			player.pos.x += player.movedamp * player.speed * delta * Math.cos(player.pitch) * Math.sin(player.yaw);
+			player.pos.y -= player.movedamp * player.speed * delta * Math.sin(player.pitch);
+			player.pos.z += player.movedamp * player.speed * delta * Math.cos(player.yaw) * Math.cos(player.pitch);
 		}
 		
 		if (Keyboard.isKeyDown(Keyboard.KEY_SPACE))
 		{
-			y += delta*speed;
+			player.pos.y += delta*player.speed;
 		}
 		else if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT))
 		{
-			y -= delta*speed;
+			player.pos.y -= delta*player.speed;
+		}
+		
+		if (Keyboard.isKeyDown(Keyboard.KEY_Q))
+		{
+			player.pos.w -= delta*player.speed;
+		}
+		if (Keyboard.isKeyDown(Keyboard.KEY_E))
+		{
+			player.pos.w += delta*player.speed;
 		}
 		//W/S
 		//z -= speed * Math.cos( Math.toRadians(yaw) ) * delta;
@@ -154,6 +183,7 @@ public class FullscreenExample {
 		//if (Keyboard.isKeyDown(Keyboard.KEY_Q)) z += 0.05f * delta;
 		//if (Keyboard.isKeyDown(Keyboard.KEY_E)) z -= 0.05f * delta;
  
+		
 		while (Keyboard.next()) {
 		    if (Keyboard.getEventKeyState()) {
 		        if (Keyboard.getEventKey() == Keyboard.KEY_F) {
@@ -277,6 +307,9 @@ public class FullscreenExample {
 		GL11.glMatrixMode(GL11.GL_MODELVIEW);
 		GL11.glLoadIdentity();
 		
+		GL11.glEnable(GL11.GL_BLEND); 
+		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+		
 		GL11.glShadeModel(GL11.GL_SMOOTH); 
 		GL11.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		GL11.glClearDepth(1.0f);                         // Depth Buffer Setup
@@ -286,67 +319,119 @@ public class FullscreenExample {
 	}
  
 	public void renderGL() {
+		
 		// Clear The Screen And The Depth Buffer
 		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
  
 		// R,G,B,A Set The Color To Blue One Time Only
 		
- 
-		// draw quad
-		//GL11.glPushMatrix();
-			GL11.glLoadIdentity();
-			GL11.glRotatef(-roll, 0, 0, 1);
-			GL11.glRotatef(-pitch, 1, 0, 0);
-			GL11.glRotatef(-yaw, 0, 1, 0);
-			GL11.glTranslatef(-x, -y, -z);
-			
- 
-			GL11.glBegin(GL11.GL_QUADS);
-				GL11.glColor4f(1, 0.5f, 0.5f, 1);
-				GL11.glVertex3f( 1.0f, 1.0f,-1.0f);          // Top Right Of The Quad (Top)
-				GL11.glVertex3f(-1.0f, 1.0f,-1.0f);          // Top Left Of The Quad (Top)
-				GL11.glVertex3f(-1.0f, 1.0f, 1.0f);          // Bottom Left Of The Quad (Top)
-				GL11.glVertex3f( 1.0f, 1.0f, 1.0f);          // Bottom Right Of The Quad (Top)
-				
-				GL11.glColor4f(1, 1, 0.5f, 1);
-				GL11.glVertex3f( 1.0f,-1.0f, 1.0f);          // Top Right Of The Quad (Bottom)
-				GL11.glVertex3f(-1.0f,-1.0f, 1.0f);          // Top Left Of The Quad (Bottom)
-				GL11.glVertex3f(-1.0f,-1.0f,-1.0f);          // Bottom Left Of The Quad (Bottom)
-				GL11.glVertex3f( 1.0f,-1.0f,-1.0f);          // Bottom Right Of The Quad (Bottom)
-				
-				GL11.glColor4f(0.5f, 1, 0.5f, 1);
-				GL11.glVertex3f( 1.0f, 1.0f, 1.0f);          // Top Right Of The Quad (Front)
-				GL11.glVertex3f(-1.0f, 1.0f, 1.0f);          // Top Left Of The Quad (Front)
-				GL11.glVertex3f(-1.0f,-1.0f, 1.0f);          // Bottom Left Of The Quad (Front)
-				GL11.glVertex3f( 1.0f,-1.0f, 1.0f);          // Bottom Right Of The Quad (Front)
-				
-				GL11.glColor4f(0.5f, 1, 1, 1);
-				GL11.glVertex3f( 1.0f,-1.0f,-1.0f);          // Bottom Left Of The Quad (Back)
-				GL11.glVertex3f(-1.0f,-1.0f,-1.0f);          // Bottom Right Of The Quad (Back)
-				GL11.glVertex3f(-1.0f, 1.0f,-1.0f);          // Top Right Of The Quad (Back)
-				GL11.glVertex3f( 1.0f, 1.0f,-1.0f);          // Top Left Of The Quad (Back)
-				
-				GL11.glColor4f(0.5f, 0.5f, 1, 1);
-				GL11.glVertex3f(-1.0f, 1.0f, 1.0f);          // Top Right Of The Quad (Left)
-				GL11.glVertex3f(-1.0f, 1.0f,-1.0f);          // Top Left Of The Quad (Left)
-				GL11.glVertex3f(-1.0f,-1.0f,-1.0f);          // Bottom Left Of The Quad (Left)
-				GL11.glVertex3f(-1.0f,-1.0f, 1.0f);          // Bottom Right Of The Quad (Left)
-				
-				GL11.glColor4f(1, 0.5f, 1, 1);
-				GL11.glVertex3f( 1.0f, 1.0f,-1.0f);          // Top Right Of The Quad (Right)
-				GL11.glVertex3f( 1.0f, 1.0f, 1.0f);          // Top Left Of The Quad (Right)
-				GL11.glVertex3f( 1.0f,-1.0f, 1.0f);          // Bottom Left Of The Quad (Right)
-				GL11.glVertex3f( 1.0f,-1.0f,-1.0f);          // Bottom Right Of The Quad (Right)
-			GL11.glEnd();
-		//GL11.glPopMatrix();
-			
-		rotation += 3;
+		world.prepareRender();
 		
+		//render!!
+		//make sure not to render things that are outside of the relevant view
 		
+		GL11.glLoadIdentity();
+		GL11.glRotatef(-(float)Math.toDegrees(player.roll), 0, 0, 1);
+		GL11.glRotatef(-(float)Math.toDegrees(player.pitch), 1, 0, 0);
+		GL11.glRotatef(-(float)Math.toDegrees(player.yaw), 0, 1, 0);
+		
+		for (Chunk c : world.loaded)
+		{
+			for (short e : c.toRender)
+			{
+				GL11.glTranslatef(-(float)player.pos.x, -(float)player.pos.y, -(float)player.pos.z);
+				renderBlock(c.findBlock(e));
+				GL11.glTranslatef((float)player.pos.x, (float)player.pos.y, (float)player.pos.z);
+			}
+		}
+	}
+	
+	public void renderBlock(Block block)
+	{
+		Point4D p = block.getPosition();
+		GL11.glTranslatef((float)p.x +0.5f, (float)p.y +0.5f, (float)p.z +0.5f);
+		float alpha = 1.0f - (1.0f/player.wdepth)*(float)Math.abs(p.w - player.pos.w ); //VERY TEMPORARY ALPHA FUNCTION
+		if (alpha < 0 )
+			alpha = 0;
+		if (alpha > 1)
+			alpha = 1;
+		
+		System.out.println("alpha: "+alpha);
+		
+		GL11.glBegin(GL11.GL_QUADS);
+			GL11.glColor4f(1, 0.5f, 0.5f, alpha);
+			GL11.glVertex3f( 0.5f, 0.5f,-0.5f);          // Top Right Of The Quad (Top)
+			GL11.glVertex3f(-0.5f, 0.5f,-0.5f);          // Top Left Of The Quad (Top)
+			GL11.glVertex3f(-0.5f, 0.5f, 0.5f);          // Bottom Left Of The Quad (Top)
+			GL11.glVertex3f( 0.5f, 0.5f, 0.5f);          // Bottom Right Of The Quad (Top)
+			
+			GL11.glColor4f(1, 1, 0.5f, alpha);
+			GL11.glVertex3f( 0.5f,-0.5f, 0.5f);          // Top Right Of The Quad (Bottom)
+			GL11.glVertex3f(-0.5f,-0.5f, 0.5f);          // Top Left Of The Quad (Bottom)
+			GL11.glVertex3f(-0.5f,-0.5f,-0.5f);          // Bottom Left Of The Quad (Bottom)
+			GL11.glVertex3f( 0.5f,-0.5f,-0.5f);          // Bottom Right Of The Quad (Bottom)
+			
+			GL11.glColor4f(0.5f, 1, 0.5f, alpha);
+			GL11.glVertex3f( 0.5f, 0.5f, 0.5f);          // Top Right Of The Quad (Front)
+			GL11.glVertex3f(-0.5f, 0.5f, 0.5f);          // Top Left Of The Quad (Front)
+			GL11.glVertex3f(-0.5f,-0.5f, 0.5f);          // Bottom Left Of The Quad (Front)
+			GL11.glVertex3f( 0.5f,-0.5f, 0.5f);          // Bottom Right Of The Quad (Front)
+		
+			GL11.glColor4f(0.5f, 1, 1, alpha);
+			GL11.glVertex3f( 0.5f,-0.5f,-0.5f);          // Bottom Left Of The Quad (Back)
+			GL11.glVertex3f(-0.5f,-0.5f,-0.5f);          // Bottom Right Of The Quad (Back)
+			GL11.glVertex3f(-0.5f, 0.5f,-0.5f);          // Top Right Of The Quad (Back)
+			GL11.glVertex3f( 0.5f, 0.5f,-0.5f);          // Top Left Of The Quad (Back)
+			
+			GL11.glColor4f(0.5f, 0.5f, 1, alpha);
+			GL11.glVertex3f(-0.5f, 0.5f, 0.5f);          // Top Right Of The Quad (Left)
+			GL11.glVertex3f(-0.5f, 0.5f,-0.5f);          // Top Left Of The Quad (Left)
+			GL11.glVertex3f(-0.5f,-0.5f,-0.5f);          // Bottom Left Of The Quad (Left)
+			GL11.glVertex3f(-0.5f,-0.5f, 0.5f);          // Bottom Right Of The Quad (Left)
+			
+			GL11.glColor4f(1, 0.5f, 1, alpha);
+			GL11.glVertex3f( 0.5f, 0.5f,-0.5f);          // Top Right Of The Quad (Right)
+			GL11.glVertex3f( 0.5f, 0.5f, 0.5f);          // Top Left Of The Quad (Right)
+			GL11.glVertex3f( 0.5f,-0.5f, 0.5f);          // Bottom Left Of The Quad (Right)
+			GL11.glVertex3f( 0.5f,-0.5f,-0.5f);          // Bottom Right Of The Quad (Right)
+		GL11.glEnd();
+		
+		GL11.glTranslatef(-(float)p.x -0.5f, -(float)p.y -0.5f, -(float)p.z -0.5f);
 	}
  
 	public static void main(String[] argv) {
-		FullscreenExample fullscreenExample = new FullscreenExample();
-		fullscreenExample.start();
+		Runner runner = new Runner();
+		runner.start();
+	}
+}
+
+class GUICanvas extends Canvas
+{
+	Runner parent;
+	Image mem;
+	Graphics2D g2;
+	
+	public GUICanvas(Runner a)
+	{ parent = a; }
+	
+	public void paint(Graphics g)
+	{
+		mem = createImage(getWidth(), getHeight());
+		g2 = (Graphics2D)mem.getGraphics();
+		
+		g2.setColor(Color.white);
+		g2.fillRect(0, 0, 100, 300);
+		g2.setColor(Color.black);
+		g2.drawString(""+parent.player.movedamp,0,0);
+		g2.drawString(""+parent.player.pos.x,0,10);
+		g2.drawString(""+parent.player.pos.y,0,20);
+		g2.drawString(""+parent.player.pos.z,0,30);
+		g2.drawString(""+parent.player.pos.w,0,40);
+		g2.drawString(""+parent.player.yaw,0,50);
+		g2.drawString(""+parent.player.pitch,0,60);
+		g2.drawString(""+parent.player.roll,0,70);
+		g2.drawString(""+parent.player.wane,0,80);
+		
+		g.drawImage(mem, 0,0, this);
 	}
 }

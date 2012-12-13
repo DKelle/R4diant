@@ -18,16 +18,17 @@ public class Point4D
 		if (p != null)
 		{
 			//angles:
-			// xz, xzy, xzyw
+			// xz, xzy, xzyw (yaw, pitch, and wane)
 			// Math.atan2(p.z-z, p.x-x)
 			// Math.atan2(p.y-y, Math.sqrt( Math.pow(p.x-x, 2) + Math.pow(p.z-z, 2) ))
 			// Math.atan2(p.w-w, Math.sqrt( Math.pow(p.x-x, 2) + Math.pow(p.y-y, 2) + Math.pow(p.z-z, 2) ))
 			double[] a = 
 					{ 
-						Math.atan2(p.z-z, p.x-x), 
+						Math.atan2(x-p.x, z-p.z), 
 						Math.atan2(p.y-y, Math.sqrt( Math.pow(p.x-x, 2) + Math.pow(p.z-z, 2) )), 
 						Math.atan2(p.w-w, Math.sqrt( Math.pow(p.x-x, 2) + Math.pow(p.y-y, 2) + Math.pow(p.z-z, 2) ))
 					};
+			//System.out.println("dir: "+a[0]);
 			return a;
 		}	
 		double[] alt = {0.0, 0.0, 0.0};
@@ -72,6 +73,7 @@ public class Point4D
 		{
 			//distance: sqrt( (x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2 + (w2-w1)^2 )
 			double d = Math.sqrt( Math.pow(p.x-x,2) + Math.pow(p.y-y,2) + Math.pow(p.z-z,2) + Math.pow(p.w-w,2) );
+			//System.out.println("dist: "+d);
 			return d;
 		}	
 		double alt = -1.0;

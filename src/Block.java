@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 
 
-public class Block 
+public class Block implements Comparable
 {
 	Chunk chunk;
 	short pos;
@@ -36,10 +36,12 @@ public class Block
 		pos = position;
 	}
 	
-	//check methods
-	public void checkSides()
+	public Block(Chunk ch, Point4D p)
 	{
-		//check to see which sides are exposed to air
+		elements = new ArrayList<Byte>();
+		ores = new ArrayList<Ore>();
+		chunk = ch;
+		pos = (short)( ((short)p.x) | ((short)p.y << 3) | ((short)p.z << 6) | ((short)p.w << 9) );
 	}
 	
 	public void getLight()
@@ -51,7 +53,6 @@ public class Block
 	{
 		ores.add(ore);
 	}
-	
 	
 	//final access methods
 	public String getName()
@@ -87,6 +88,20 @@ public class Block
 	public byte lightStrength()
 	{
 		return 0;
+	}
+
+	public int compareTo(Object o) 
+	{
+		//sort by xyzw position
+		
+		return pos;
+	}
+	
+	public Point4D getPosition()
+	{
+		Point4D res = new Point4D(chunk.x*8+(pos & 7), chunk.y*8+((pos >> 3) & 7), chunk.z*8+((pos >> 6) & 7), chunk.w*8+((pos >> 9) & 7) );
+		System.out.println(res);
+		return res;
 	}
 
 }
