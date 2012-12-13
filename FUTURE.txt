@@ -1,0 +1,36 @@
+Ideas and such. Plans. 
+Post here for any development jobs.
+Just add your name at the bottom with the job you're planning to do.
+If you want, I can assign you jobs, but I don't know your skill level, so...
+Ask me for more information...
+
+
+List of necesities:
+Rendering for entities/player
+Creation of enemies
+Enemy AI
+Curved rendering for planets
+Implementation of wane (4D rotation)
+Texture art
+Enemy/player art
+Texture file lookup algorithms and a way to take an image from it
+Texture rendering for each specific side
+Making the sides that are not visible not render
+Fixing the algorithm to see if a chunk is in view
+Making chunks save and load based on player location
+Planet chunk layout (VERY DIFFICULT)
+Updates for chunks/blocks
+Implementation of the w chunk differences
+Fixing the alpha rendering
+Think of other ways to save memory/processing power
+Weather
+Biomes
+Land generation
+Caves (4D caves!!)
+Resource generation in general (Where do certain minerals exist?)
+Temperature implementation and phase changes
+Gravity
+Off-grid blocks
+Making the game not crash when refocused
+
+Additions:
