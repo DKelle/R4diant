@@ -1,0 +1,25 @@
+Version 0.0:
+
+
+-Bare files. Tentative.
+
+-Content:
+--BiomeMap - Maps the biomes to voronoi
+--Block - Block. What more to say
+--Chunk - 8x8x8x8 chunk of blocks. Might be redesigned.
+--ChunkLoader - Loads chunks based on player position
+--Entity - Entities.
+--Flowing - Gases and liquids.
+--FullscreenExample - The runner.
+--Generation - Land generation.
+--Inventory - Inventory.
+--Item - Item.
+--ItemOut - Item on the ground.
+--Living - A living entity
+--OffGridBlock - A block off the grid.
+--Ore - Ore, in the blocks
+--Particle - Particles, for effects
+--Player - The player.
+--Point4D - A point, with xyzw.
+--Solid - A solid block.
+--World - The world, as in the whole game. May be redesigned.
