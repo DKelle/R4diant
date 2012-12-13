@@ -26,4 +26,16 @@ public class World
 		}
 	}
 	
+	public Chunk getChunk(int x, int y, int z, int w)
+	{
+		for (Chunk e : loaded)
+		{
+			if (e.x == x && e.y == y && e.z == z && e.w == w)
+			{
+				return e;
+			}
+		}
+		return null;
+	}
+	
 }

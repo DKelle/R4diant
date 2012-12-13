@@ -1,19 +1,15 @@
-Version 0.1:
+Version 0.1732:
 
+-Chunks and rendering for transparency are now correct.
 
--Rendering is better, including a start to w. Chunks are now loaded into rendering queue.
+-Content:
+--Block - Redesigned for the new chunk layout. CheckSides function complete.
+--Chunk - Now a 4D array. Period. Transparency sort now correct.
+--ChunkLoader - A small random terrain function.
+--Solid - CheckSides is now just part of block.
+--World - render preparations are now fairly complete.
+--Runner - Movement dampening corrected. Rendering for transparency.
 
--Content
---Block - getPosition function added.
---Chunk - ArrayList of blocks. This will be a problem. It's a massive fight between memory and computation power. Choose one or the other... Maybe later there will be an option for both. Added render preparation functions.
---ChunkLoader - Now has the temporary blocks hardcoded.
---Player - movement features updated. Checking to see if a chunk is in view (minimal).
---Point4D - Distance and angle functions changed a bit for yaw. Be careful...
---Solid - checkSides added. This function will probably just be part of Block in the future.
---World - Added prepareForRender, which just calls it for all loaded chunks.
---Runner - Main runner. Movement functions. Rendering. Currently, w distance appears as change in alpha.
-
--Problems
---Alpha and chunkInView functions are minimal, and will not work correctly later.
---Should chunks have an ArrayList or array? (memory vs. computations)
---Two transparent blocks will block out each other entirely sometimes.. huh?
+-Problems:
+--Overlap of w faces, render only the more opaque of the two
+--TimSort fails randomly. I don't even know why this happens.

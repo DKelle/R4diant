@@ -26,23 +26,23 @@ public class ChunkLoader
 		//a temporary function to initialize the land for viewing
 		loaded.add(new Point4D(0,0,0,0));
 		Chunk c = new Chunk(world, 0,0,0,0);
-		c.data.add(new Block(c, (short)0));
-		c.data.add(new Block(c, (short)1));
-		c.data.add(new Block(c, (short)3));
-		c.data.add(new Block(c, (short)5));
-		c.data.add(new Block(c, (short)8));
-		c.data.add(new Block(c, (short)24));
-		c.data.add(new Block(c, (short)64));
-		c.data.add(new Block(c, (short)242));
-		c.data.add(new Block(c, (short)2414));
-		c.data.add(new Block(c, (short)2222));
-		c.data.add(new Block(c, (short)5523));
-		c.data.add(new Block(c, (short)1222));
-		c.data.add(new Block(c, (short)1235));
-		c.data.add(new Block(c, (short)2492));
-		c.data.add(new Block(c, (short)6232));
-		c.data.add(new Block(c, (short)2123));
+		//this is redundant, but I don't think it can be helped 
+		//chunk.addBlock() could work, but in the future, different block types...
+		//Eh, we need a function to look up a block type by ID. Hmm.
 		
+		for (int i = 0; i < 8; i++)
+		{
+			for (int k = 0; k < 8; k++)
+			{
+				int y = (int)(Math.random()*8);
+				int w = (int)(Math.random()*8);
+				c.data[i][y][k][w] = new Block(c, (short)(512*w+64*k+8*y+i)); 
+			}
+		}
+		
+		//c.data[0][0][0][0] = new Block(c, (short)0_0000);
+		//c.data[1][0][0][0] = new Block(c, (short)0_0001);
+		//c.data[0][1][0][0] = new Block(c, (short)0_0010);
 		
 		world.loaded.add(c);
 	}

@@ -4,12 +4,17 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 
 import javax.swing.JFrame;
 
 import org.lwjgl.LWJGLException;
 import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
@@ -66,7 +71,9 @@ public class Runner
 			int delta = getDelta();
  
 			update(delta);
-			renderGL();
+			
+			if (Display.isActive() || Display.isDirty() || Display.isVisible())
+				renderGL();
 			
 			canvas.paint(canvas.getGraphics());
  
@@ -79,6 +86,9 @@ public class Runner
  
 	public void update(int delta) 
 	{
+		//player.yaw -= (player.rotspeed*delta)*Mouse.getDX()*.15;
+		//player.pitch += (player.rotspeed*delta)*Mouse.getDY()*.15;
+		
 		if (Keyboard.isKeyDown(Keyboard.KEY_I)) 
 		{
 			player.pitch += player.rotspeed * delta;
@@ -115,7 +125,7 @@ public class Runner
 		  && ( ( Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_S) ) )
 		  && ( ( Keyboard.isKeyDown(Keyboard.KEY_Q) || Keyboard.isKeyDown(Keyboard.KEY_E) ) ) )
 			
-			player.movedamp = 1.0f/3.0f;
+			player.movedamp = 1.0f/(float)Math.sqrt(3);
 		
 		else if ( ( (Keyboard.isKeyDown(Keyboard.KEY_A) || Keyboard.isKeyDown(Keyboard.KEY_D)) 
 		    && ( Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_S) ) )
@@ -124,7 +134,7 @@ public class Runner
 		  || ( ( Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_S) ) 
 			&& ( Keyboard.isKeyDown(Keyboard.KEY_Q) || Keyboard.isKeyDown(Keyboard.KEY_E) ) ) )
 			
-			player.movedamp = 1.0f/2.0f;
+			player.movedamp = 1.0f/(float)Math.sqrt(2);
 		
 		else 
 			player.movedamp = 1.0f/1.0f;
@@ -133,13 +143,13 @@ public class Runner
 		
 		if (Keyboard.isKeyDown(Keyboard.KEY_A)) 
 		{
-			player.pos.z -= player.movedamp * player.speed * Math.cos( player.yaw+Math.PI/2 ) * delta;
-			player.pos.x -= player.movedamp * player.speed * Math.sin( player.yaw+Math.PI/2 ) * delta;
+			player.pos.z += player.movedamp * player.speed * Math.sin( player.yaw ) * delta;
+			player.pos.x -= player.movedamp * player.speed * Math.cos( player.yaw ) * delta;
 		}
 		else if (Keyboard.isKeyDown(Keyboard.KEY_D)) 
 		{
-			player.pos.z -= player.movedamp * player.speed * delta * Math.cos( player.yaw-Math.PI/2 );
-			player.pos.x -= player.movedamp * player.speed * delta * Math.sin( player.yaw-Math.PI/2 );
+			player.pos.z -= player.movedamp * player.speed * delta * Math.sin( player.yaw );
+			player.pos.x += player.movedamp * player.speed * delta * Math.cos( player.yaw );
 		}
 
 		if (Keyboard.isKeyDown(Keyboard.KEY_W)) 
@@ -318,6 +328,9 @@ public class Runner
 		GL11.glHint(GL11.GL_PERSPECTIVE_CORRECTION_HINT, GL11.GL_NICEST);
 	}
  
+	///***LOOK!**////
+	Byte[] order;
+	
 	public void renderGL() {
 		
 		// Clear The Screen And The Depth Buffer
@@ -334,66 +347,163 @@ public class Runner
 		GL11.glRotatef(-(float)Math.toDegrees(player.roll), 0, 0, 1);
 		GL11.glRotatef(-(float)Math.toDegrees(player.pitch), 1, 0, 0);
 		GL11.glRotatef(-(float)Math.toDegrees(player.yaw), 0, 1, 0);
+		GL11.glTranslatef(-(float)player.pos.x, -(float)player.pos.y, -(float)player.pos.z);
+		
+		//order = getSideOrder();
 		
 		for (Chunk c : world.loaded)
-		{
-			for (short e : c.toRender)
+		{	
+			/*
+			for (Byte o : order)
+			{	
+				if (o.intValue() == 0)
+					for (BlockSide e : c.right)
+						renderBlockFace(e);
+				if (o.intValue() == 1)
+					for (BlockSide e : c.left)
+						renderBlockFace(e);
+				if (o.intValue() == 2)
+					for (BlockSide e : c.up)
+						renderBlockFace(e);
+				if (o.intValue() == 3)
+					for (BlockSide e : c.down)
+						renderBlockFace(e);
+				if (o.intValue() == 4)
+					for (BlockSide e : c.front)
+						renderBlockFace(e);
+				if (o.intValue() == 5)
+					for (BlockSide e : c.back)
+						renderBlockFace(e);
+			}
+			*/
+			
+			for (BlockSide e : c.sides)
 			{
-				GL11.glTranslatef(-(float)player.pos.x, -(float)player.pos.y, -(float)player.pos.z);
-				renderBlock(c.findBlock(e));
-				GL11.glTranslatef((float)player.pos.x, (float)player.pos.y, (float)player.pos.z);
+				renderBlockFace(e);
 			}
 		}
+		
+		GL11.glTranslatef((float)player.pos.x, (float)player.pos.y, (float)player.pos.z);
 	}
 	
-	public void renderBlock(Block block)
+	public Byte[] getSideOrder()
 	{
-		Point4D p = block.getPosition();
-		GL11.glTranslatef((float)p.x +0.5f, (float)p.y +0.5f, (float)p.z +0.5f);
+		//create a linear interpolation of the user's current direction
+		//let it collide with the 1x1x1 box of the player
+		//at that collision point, find the order of the sides, closest to farthest
+		//this gives the list of sides that are farthest to closest.
+		
+		Point4D test = new Point4D(-Math.cos(player.pitch) * Math.sin(player.yaw), Math.sin(player.pitch), -Math.cos(player.pitch) * Math.cos(player.yaw), 0);
+		
+		Map<Byte, Double> a = new HashMap<Byte, Double>();
+		a.put(new Byte((byte)0), test.dist(new Point4D(1,0,0,0)));
+		a.put(new Byte((byte)1), test.dist(new Point4D(-1,0,0,0)));
+		a.put(new Byte((byte)2), test.dist(new Point4D(0,1,0,0)));
+		a.put(new Byte((byte)3), test.dist(new Point4D(0,-1,0,0)));
+		a.put(new Byte((byte)4), test.dist(new Point4D(0,0,1,0)));
+		a.put(new Byte((byte)5), test.dist(new Point4D(0,0,-1,0)));
+		
+		class DoubleComparator implements Comparator<Byte>
+		{
+			Map<Byte, Double> base;
+			public DoubleComparator(Map<Byte, Double> base) {
+		    	this.base = base;
+		    }
+		    
+		    // Note: this comparator imposes orderings that are inconsistent with equals.    
+		    public int compare(Byte a, Byte b) {
+		    	if (base.get(a) >= base.get(b)) {
+		            return 1;
+		        } else {
+		            return -1;
+		        } // returning 0 would merge keys
+		    	//Note that this will create a reverse ordering because the farthest objects must be rendered first for blending to work
+		    }
+		}
+		
+        DoubleComparator comp =  new DoubleComparator(a);
+        TreeMap<Byte,Double> sorted = new TreeMap<Byte,Double>(comp);
+        sorted.putAll(a);
+        
+        Byte[] res = new Byte[6];
+        sorted.keySet().toArray(res);
+		return res;
+	}
+	
+	public float alphaFunction(Point4D p)
+	{
 		float alpha = 1.0f - (1.0f/player.wdepth)*(float)Math.abs(p.w - player.pos.w ); //VERY TEMPORARY ALPHA FUNCTION
 		if (alpha < 0 )
 			alpha = 0;
 		if (alpha > 1)
 			alpha = 1;
 		
-		System.out.println("alpha: "+alpha);
+		return alpha;
+	}
+	
+	public void renderBlockFace(BlockSide side)
+	{
+		Point4D p = side.parent.getPosition();
+		GL11.glTranslatef((float)p.x +0.5f, (float)p.y +0.5f, (float)p.z +0.5f);
+		float alpha = alphaFunction(p);
 		
 		GL11.glBegin(GL11.GL_QUADS);
+		
+		if (side.value == 2)
+		{
 			GL11.glColor4f(1, 0.5f, 0.5f, alpha);
 			GL11.glVertex3f( 0.5f, 0.5f,-0.5f);          // Top Right Of The Quad (Top)
 			GL11.glVertex3f(-0.5f, 0.5f,-0.5f);          // Top Left Of The Quad (Top)
 			GL11.glVertex3f(-0.5f, 0.5f, 0.5f);          // Bottom Left Of The Quad (Top)
 			GL11.glVertex3f( 0.5f, 0.5f, 0.5f);          // Bottom Right Of The Quad (Top)
-			
+		}
+		
+		if (side.value == 3)
+		{
 			GL11.glColor4f(1, 1, 0.5f, alpha);
 			GL11.glVertex3f( 0.5f,-0.5f, 0.5f);          // Top Right Of The Quad (Bottom)
 			GL11.glVertex3f(-0.5f,-0.5f, 0.5f);          // Top Left Of The Quad (Bottom)
 			GL11.glVertex3f(-0.5f,-0.5f,-0.5f);          // Bottom Left Of The Quad (Bottom)
 			GL11.glVertex3f( 0.5f,-0.5f,-0.5f);          // Bottom Right Of The Quad (Bottom)
-			
+		}
+		
+		if (side.value == 4)
+		{
 			GL11.glColor4f(0.5f, 1, 0.5f, alpha);
 			GL11.glVertex3f( 0.5f, 0.5f, 0.5f);          // Top Right Of The Quad (Front)
 			GL11.glVertex3f(-0.5f, 0.5f, 0.5f);          // Top Left Of The Quad (Front)
 			GL11.glVertex3f(-0.5f,-0.5f, 0.5f);          // Bottom Left Of The Quad (Front)
 			GL11.glVertex3f( 0.5f,-0.5f, 0.5f);          // Bottom Right Of The Quad (Front)
+		}
 		
+		if (side.value == 5)
+		{
 			GL11.glColor4f(0.5f, 1, 1, alpha);
 			GL11.glVertex3f( 0.5f,-0.5f,-0.5f);          // Bottom Left Of The Quad (Back)
 			GL11.glVertex3f(-0.5f,-0.5f,-0.5f);          // Bottom Right Of The Quad (Back)
 			GL11.glVertex3f(-0.5f, 0.5f,-0.5f);          // Top Right Of The Quad (Back)
 			GL11.glVertex3f( 0.5f, 0.5f,-0.5f);          // Top Left Of The Quad (Back)
-			
+		}
+		
+		if (side.value == 1)
+		{
 			GL11.glColor4f(0.5f, 0.5f, 1, alpha);
 			GL11.glVertex3f(-0.5f, 0.5f, 0.5f);          // Top Right Of The Quad (Left)
 			GL11.glVertex3f(-0.5f, 0.5f,-0.5f);          // Top Left Of The Quad (Left)
 			GL11.glVertex3f(-0.5f,-0.5f,-0.5f);          // Bottom Left Of The Quad (Left)
 			GL11.glVertex3f(-0.5f,-0.5f, 0.5f);          // Bottom Right Of The Quad (Left)
-			
+		}
+		
+		if (side.value == 0)
+		{
 			GL11.glColor4f(1, 0.5f, 1, alpha);
 			GL11.glVertex3f( 0.5f, 0.5f,-0.5f);          // Top Right Of The Quad (Right)
 			GL11.glVertex3f( 0.5f, 0.5f, 0.5f);          // Top Left Of The Quad (Right)
 			GL11.glVertex3f( 0.5f,-0.5f, 0.5f);          // Bottom Left Of The Quad (Right)
 			GL11.glVertex3f( 0.5f,-0.5f,-0.5f);          // Bottom Right Of The Quad (Right)
+		}
+		
+		//note: might have to add something here for w sides
 		GL11.glEnd();
 		
 		GL11.glTranslatef(-(float)p.x -0.5f, -(float)p.y -0.5f, -(float)p.z -0.5f);
@@ -429,9 +539,16 @@ class GUICanvas extends Canvas
 		g2.drawString(""+parent.player.pos.w,0,40);
 		g2.drawString(""+parent.player.yaw,0,50);
 		g2.drawString(""+parent.player.pitch,0,60);
-		g2.drawString(""+parent.player.roll,0,70);
-		g2.drawString(""+parent.player.wane,0,80);
+		//g2.drawString(""+parent.player.roll,0,70);
+		//g2.drawString(""+parent.player.wane,0,80);
 		
+		/*
+		String order = "";
+		for (int i = 0; i < parent.order.length; i++)
+			order = order + parent.order[i].toString() + ", ";
+		
+		g2.drawString(""+order,0,70);
+		*/
 		g.drawImage(mem, 0,0, this);
 	}
 }

@@ -1,0 +1,1201 @@
+Classes:
+
+64 kB per chunk! (blocks only, entities are worse)
+
+
+
+
+Block
+	-Chunk
+	-short position+extra
+	-short temperature
+	-short ID
+	-byte light
+	-byte gravity
+	-ArrayList<Byte> elements
+	-ArrayList<Ore> ores
+	-final String name
+	-final short lowStateChange
+	-final short highStateChange
+	-final short lowState
+	-final short highState
+	-final byte density
+	
+
+Solid extends Block
+	-byte sides
+	-byte rotation+extra
+	-byte strain
+	-final byte strainLimit
+	-final byte bounds+hardness
+	-final byte tool+slip+detach
+	
+Flowing extends Block
+	-boolean state
+	-byte volume
+	-final byte flowRate
+	
+	//if gravity is greater than flowRate, flow down and sideways
+	//else flow all directions
+
+
+Data allocation for blocks:
+
+	short position+extra:
+	  Position in chunk - 12 bits (4 x 2^3)
+	  canSeeSky - 1 bit
+	  placedByPlayer - 1 bit
+	  (2 bits left)
+
+	byte rotation+state:
+	  Rotation - 6 bits
+		2 bits for W
+		2 bits for Y
+		2 bits for XZ
+	  state - 2 bits (reference)
+
+	byte sides:
+	  Exposed sides - 8 bits (one for each side)
+
+	short temperature:
+	  Temperature - 16 bits
+
+	final short ID:
+	  ID - 16 bits
+
+	byte strain:
+	  strain - 8 bits
+	  
+	byte light:
+	  light - 8 bits
+	  
+	byte gravity:
+	  gravity - 8 bits
+
+	byte[] elements:
+	  Each element - 8 bits
+		hard/soft - 1 bit
+		ID by mass - 4 bits
+		abundance in block - 3 bits
+
+	Chunk reference - Unknown
+	ArrayList of Ore references - Unknown
+
+	final byte strainLimit:
+	  final strainLimit - 8 bits
+
+	final byte bounds+hardness:
+	  final Bounds - 4 bits
+	  final Hardness - 4 bits
+
+	final byte tool+slip+detach:
+	  final Tool - 4 bits
+	  final Slipperiness - 2 bits
+	  final detach - 2 bits
+	  
+	final String name:
+	  final String name - Unknown
+
+
+Ore
+	-byte Purity
+	-byte[] Elements
+	-short ID
+
+
+
+Chunk
+	-World
+	-Array of Blocks
+	-Array of Entities
+	-Array of things to be rendered?
+	-Point4D Position
+	-byte[8][8][8] Biome ID?
+
+
+ChunkLoader
+	-World
+
+
+Entity
+	-World
+	-Chunk
+	-Point4D position
+	-Point4D speed (Vector)
+	-float yaw
+	-float pitch
+	//-float roll?
+	-float wane
+	-short age
+	-byte fallTime
+	-boolean onGround
+
+
+OffGridBlock extends Entity
+	-float roll
+	-byte sides
+	-byte state+rotation
+	-short ID
+	-short temperature
+	-byte[] elements
+	-ArrayList<Ore> ores
+	-final byte bounds+hardness
+	-final byte slip+tool+extra
+
+
+Living extends Entity
+	-short Health
+	-short Defense
+	-short Attack
+	-float Speed
+	-float RotationSpeed
+
+
+Player extends Living
+	-RenderHelper
+	-float roll
+	-byte Hunger
+	-byte Thirst
+	-byte Energy
+	-Inventory
+
+
+//note: this is Item on ground
+ItemOut extends Entity
+	-final byte MaxStackSize
+	-byte StackSize
+	-short ID
+
+
+Item
+	-Inventory
+	-byte position
+	-short ID
+	-short damage
+
+
+Inventory
+	-Array of Item
+	-final byte Size
+	-byte selected (index)
+
+
+World
+	-ArrayList of Chunks (currently loaded)
+
+
+//always renders as a single image
+Particle
+	-Point4D position
+	-float xsize
+	-float ysize
+
+
+Planet?
+
+
+Wind?
+
+
+Runner
+	-Player
+	-World
+	-ChunkLoader
+
+
+//holds current viewing axes?
+RenderHelper
+
+
+Point4D
+	-double x
+	-double y
+	-double z
+	-double w
+
+Point4DInt
+	-int x
+	-int y
+	-int z
+	-int w
+	
+Point4DFloat
+	-float x
+	-float y
+	-float z
+	-float w
+
+
+Polygon4D
+	-ArrayList of Point4D
+
+
+
+
+
+
+
+	
+	
+
+Full layout:
+Project
+{
+	Point4D
+	Point4DInt
+	Point4DFloat
+	Runner
+	{
+		\Player
+		\World
+		\ChunkLoader
+	}
+	Particle
+	{
+		/World
+	}
+	World
+	{
+		\Chunk
+	}
+	Chunk
+	{
+		/World
+		\Block
+	}
+	ChunkLoader
+	{
+		/World
+	}
+	Item
+	{
+		/Inventory
+	}
+	Inventory
+	{
+		/Player
+		\Item
+	}
+	Entity
+	{
+		/World
+		Living
+		{
+			Player
+			{
+				\Inventory
+			}
+		}
+		OffGridBlock
+		ItemOut
+	}
+	Block
+	{
+		/Chunk
+		Flowing
+	}
+	Ore
+}
+	
+
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+
+	
+	
+	
+	
+	
+	
+Block
+{
+	Air
+	{
+		id = 0
+		name = "Air"
+		state = 2
+		lowStateChange = 155
+		lowState = LiquidNitrogen
+		highStateChange = 5500
+		highState = Lightning
+		flowRate = 100
+		density = 100
+		elements = "H2 C N2 O5" 
+	}
+	LiquidNitrogen
+	{
+		id = 1		
+		name = "Liquid Nitrogen"
+		state = 1
+		lowStateChange = 0
+		lowState = LiquidNitrogen
+		highStateChange = 155
+		highState = Air
+		flowRate = 10
+		density = 100
+		elements = "N2"
+	}
+	Lightning
+	{
+		id = 2
+		name = "Lightning"
+		state = 3
+		lowStateChange = 5000
+		lowState = Air
+		highStateChange = 100000
+		highState = Lightning
+		flowRate = 1000
+		density = 500
+		elements = "H2 N2 O3"
+	}
+	Water
+	{
+		id = 3
+		name = "Water"
+		state = 1
+		lowStateChange = 546
+		lowState = Ice
+		highStateChange = 746
+		highState = Steam
+		flowRate = 10
+		density = 1000
+		elements = "H2 O"
+	}
+	Ice
+	{
+		id = 4
+		name = "Ice"
+		state = 0
+		lowStateChange = 0
+		lowState = Ice
+		highStateChange = 546
+		highState = Water
+		strainLimit = 10
+		slipperiness = 3
+		bounds = 0
+		hardness = 4
+		tool = 1
+		detach = 2
+		elements = "H2 O"
+	}
+	Steam
+	{
+		id = 5
+		name = "Steam"
+		state = 2
+		lowStateChange = 546
+		lowState = Water
+		highStateChange = 6000
+		highState = Lightning
+		flowRate = 100
+		density = 1000
+		elements = "H2 O"
+	}
+	RhyoliteLava
+	{
+		id = 6
+		name = "Rhyolite Lava"
+		state = 1
+		lowStateChange = 1700
+		lowState = Rhyolite
+		highStateChange = 100000
+		highState = RhyoliteLava
+		flowRate = 40
+		density = 10000
+		elements = "Si4 Al2 Na Ca O7"
+	}
+	AndesiteLava
+	{
+		id = 7
+		name = "Andesite Lava"
+		state = 1
+		lowStateChange = 2000
+		lowState = Andesite
+		highStateChange = 100000
+		highState = AndesiteLava
+		flowRate = 30
+		density = 12000
+		elements = "Si3 Al Fe2 Ca O8"
+	}
+	BasaltLava
+	{
+		id = 8
+		name = "Basalt Lava"
+		state = 1
+		lowStateChange = 2500
+		lowState = Basalt
+		highStateChange = 100000
+		highState = BasaltLava
+		flowRate = 20
+		density = 15000
+		elements = "Mg2 Fe4 Ca O8"
+	}
+	Ash
+	{
+		id = 9
+		name = "Ash"
+		state = 0
+		lowStateChange = 0
+		lowState = Ash
+		highStateChange = 1000
+		highState = Tar
+		strainLimit = 0
+		slipperiness = 0
+		bounds = 0
+		hardness = 0
+		tool = 2
+		detach = 0
+		elements = "C4 H2 O2"
+	}
+	Tar
+	{
+		id = 10
+		name = "Tar"
+		state = 1
+		lowStateChange = 1000
+		lowState = Ash
+		highStateChange = 2000
+		highState = CarbonDioxide
+		flowRate = 3
+		density = 6000
+		elements = "C4 H2 O2"
+	}
+	Soil
+	{
+		id = 11
+		name = "Soil"
+		state = 0
+		lowStateChange = 546
+		lowState = Permafrost
+		highStateChange = 620
+		highState = BarrenLand
+		strainLimit = 5
+		slipperiness = 1
+		bounds = 0
+		hardness = 2
+		tool = 2
+		detach = 1
+		elements = "H2 C O3"
+	}
+	Grass
+	{
+		id = 12
+		name = "Grass"
+		state = 0
+		lowStateChange = 546
+		lowState = Permafrost
+		highStateChange = 620
+		highState = BarrenLand
+		strainLimit = 8
+		slipperiness = 1
+		bounds = 0
+		hardness = 3
+		tool = 2
+		detach = 1
+		elements = "H2 C N O3"
+	}
+	Permafrost
+	{
+		id = 13
+		name = "Permafrost"
+		state = 0
+		lowStateChange = 0
+		lowState = Permafrost
+		highStateChange = 546
+		highState = Soil
+		strainLimit = 12
+		slipperiness = 2
+		bounds = 0
+		hardness = 5
+		tool = 1
+		detach = 2
+		elements = "H2 C O3"
+	}
+	BarrenLand
+	{
+		id = 14
+		name = "Barren Land"
+		state = 0
+		lowStateChange = 620
+		lowState = Soil
+		highStateChange = 1000
+		highState = Tar
+		strainLimit = 7
+		slipperiness = 1
+		bounds = 0
+		hardness = 4
+		tool = 2
+		detach = 2
+		elements = "H2 C O3"
+	}
+	CarbonDioxide
+	{
+		id = 15
+		name = "Carbon Dioxide"
+		state = 2
+		lowStateChange = 200
+		lowState = DryIce
+		highStateChange = 10000
+		highState = CarbonDioxide
+		flowRate = 60
+		density = 3000
+		elements = "C O2"
+	}
+	DryIce
+	{
+		id = 16
+		name = "Dry Ice"
+		state = 0
+		lowStateChange = 0
+		lowState = DryIce
+		highStateChange = 200
+		highState = CarbonDioxide
+		strainLimit = 5
+		slipperiness = 3
+		bounds = 0
+		hardness = 5
+		tool = 1
+		detach = 1
+		elements = "C O2"
+	}
+	Sand
+	{
+		id = 17
+		name = "Sand"
+		state = 0
+		lowStateChange = 0
+		lowState = Sand
+		highStateChange = 750
+		highState = Glass
+		strainLimit = 1
+		slipperiness = 0
+		bounds = 0
+		hardness = 0
+		tool = 2
+		detach = 0
+		elements = "Si O2"
+	}
+	Glass
+	{
+		id = 18
+		name = "Glass"
+		state = 0
+		lowStateChange = 0
+		lowState = Glass
+		highStateChange = 800
+		highState = LiquidGlass
+		strainLimit = 4
+		slipperiness = 2
+		bounds = 0
+		hardness = 2
+		tool = 1
+		detach = 3
+		elements = "Si O2"
+	}
+	LiquidGlass
+	{
+		id = 19
+		name = "Liquid Glass"
+		state = 1
+		lowStateChange = 800
+		lowState = Glass
+		highStateChange = 10000
+		highState = LiquidGlass
+		flowRate = 4
+		density = 5000
+		elements = "Si O2"
+	}
+	Quartzite
+	{
+		id = 20
+		name = "Quartzite"
+		state = 0
+		lowStateChange = 0
+		lowState = Quartzite
+		highStateChange = 1750
+		highState = RhyoliteLava
+		strainLimit = 35
+		slipperiness = 2
+		bounds = 0
+		hardness = 9
+		tool = 1
+		detach = 1
+		elements = "Si3 O6 Fe"
+	}
+	Rhyolite
+	{
+		id = 21
+		name = "Rhyolite"
+		state = 0
+		lowStateChange = 0
+		lowState = Rhyolite
+		highStateChange = 1750
+		highState = RhyoliteLava
+		strainLimit = 24
+		slipperiness = 2
+		bounds = 0
+		hardness = 10
+		tool = 1
+		detach = 1
+		elements = "Si4 Al2 Na Ca O7"
+	}
+	Andesite
+	{
+		id = 22
+		name = "Andesite"
+		state = 0
+		lowStateChange = 0
+		lowState = Andesite
+		highStateChange = 1950
+		highState = AndesiteLava
+		strainLimit = 40
+		slipperiness = 2
+		bounds = 0
+		hardness = 12
+		tool = 1
+		detach = 2
+		elements = "Si3 Al Fe2 Ca O8"
+	}
+	Basalt
+	{
+		id = 23
+		name = "Basalt"
+		state = 0
+		lowStateChange = 0
+		lowState = Basalt
+		highStateChange = 2100
+		highState = BasaltLava
+		strainLimit = 56
+		slipperiness = 2
+		bounds = 0
+		hardness = 13
+		tool = 1
+		detach = 1
+		elements = "Mg2 Fe4 Ca O8"
+	}
+	Shale
+	{
+		id = 24
+		name = "Shale"
+		state = 0
+		lowStateChange = 0
+		lowState = Shale
+		highStateChange = 1900
+		highState = RhyoliteLava
+		strainLimit = 23
+		slipperiness = 2
+		bounds = 0
+		hardness = 4
+		tool = 1
+		detach = 3
+		elements = "Si Al Ca2 C3 O7"
+	}
+	Limestone
+	{
+		id = 25
+		name = "Limestone"
+		state = 0
+		lowStateChange = 0
+		lowState = Limestone
+		highStateChange = 1850
+		highState = RhyoliteLava
+		strainLimit = 27
+		slipperiness = 2
+		bounds = 0
+		hardness = 3
+		tool = 1
+		detach = 2
+		elements = "Ca C O3"
+	}
+	Gravel
+	{
+		id = 26
+		name = "Gravel"
+		state = 0
+		lowStateChange = 0
+		lowState = Gravel
+		highStateChange = 1800
+		highState = RhyoliteLava
+		strainLimit = 1
+		slipperiness = 0
+		bounds = 0
+		hardness = 1
+		tool = 2
+		detach = 0
+		elements = "Na Si2 K Ca O3"
+	}
+	Chalk
+	{
+		id = 27
+		name = "Chalk"
+		state = 0
+		lowStateChange = 0
+		lowState = Chalk
+		highStateChange = 1800
+		highState = RhyoliteLava
+		strainLimit = 2
+		slipperiness = 2
+		bounds = 0
+		hardness = 3
+		tool = 1
+		detach = 0
+		elements = "Ca C O3"
+	}
+	Conglomerate
+	{
+		id = 28
+		name = "Conglomerate"
+		state = 0
+		lowStateChange = 0
+		lowState = Conglomerate
+		highStateChange = 1800
+		highState = RhyoliteLava
+		strainLimit = 20
+		slipperiness = 1
+		bounds = 0
+		hardness = 7
+		tool = 1
+		detach = 2
+		elements = "Na Si2 K Ca O3"
+	}
+	Sandstone
+	{
+		id = 29
+		name = "Sandstone"
+		state = 0
+		lowStateChange = 0
+		lowState = Sandstone
+		highStateChange = 1000
+		highState = LiquidGlass
+		strainLimit = 8
+		slipperiness = 1
+		bounds = 0
+		hardness = 5
+		tool = 1
+		detach = 2
+		elements = "Si O2"
+	}
+	Granite
+	{
+		id = 30
+		name = "Granite"
+		state = 0
+		lowStateChange = 0
+		lowState = Granite
+		highStateChange = 2000
+		highState = BasaltLava
+		strainLimit = 50
+		slipperiness = 2
+		bounds = 0
+		hardness = 8
+		tool = 1
+		detach = 1
+		elements = "Si Al K O5"
+	}
+	Dacite
+	{
+		id = 31
+		name = "Dacite"
+		state = 0
+		lowStateChange = 0
+		lowState = Dacite
+		highStateChange = 1950
+		highState = AndesiteLava
+		strainLimit = 45
+		slipperiness = 2
+		bounds = 0
+		hardness = 10
+		tool = 1
+		detach = 1
+		elements = "Si3 Al Fe2 O6"
+	}
+	Claystone
+	{
+		id = 32
+		name = "Claystone"
+		state = 0
+		lowStateChange = 0
+		lowState = Claystone
+		highStateChange = 1850
+		highState = RhyoliteLava
+		strainLimit = 16
+		slipperiness = 2
+		bounds = 0
+		hardness = 2
+		tool = 1
+		detach = 2
+		elements = "Si2 Al2 O6 H4"
+	}
+	Gneiss
+	{
+		id = 33
+		name = "Gneiss"
+		state = 0
+		lowStateChange = 0
+		lowState = Gneiss
+		highStateChange = 2150
+		highState = AndesiteLava
+		strainLimit = 42
+		slipperiness = 2
+		bounds = 0
+		hardness = 12
+		tool = 1
+		detach = 2
+		elements = "Si Al Mg Fe O4"
+	}
+	Schist
+	{
+		id = 34
+		name = "Schist"
+		state = 0
+		lowStateChange = 0
+		lowState = Schist
+		highStateChange = 1900
+		highState = AndesiteLava
+		strainLimit = 32
+		slipperiness = 2
+		bounds = 0
+		hardness = 8
+		tool = 1
+		detach = 3
+		elements = "Mg2 Si O4 H3"
+	}
+	Marble
+	{
+		id = 35
+		name = "Marble"
+		state = 0
+		lowStateChange = 0
+		lowState = Marble
+		highStateChange = 2400
+		highState = BasaltLava
+		strainLimit = 65
+		slipperiness = 2
+		bounds = 0
+		hardness = 9
+		tool = 1
+		detach = 1
+		elements = "Mg2 Si O4 H3"
+	}
+	Slate
+	{
+		id = 36
+		name = "Slate"
+		state = 0
+		lowStateChange = 0
+		lowState = Slate
+		highStateChange = 2200
+		highState = AndesiteLava
+		strainLimit = 36
+		slipperiness = 2
+		bounds = 0
+		hardness = 6
+		tool = 1
+		detach = 3
+		elements = "Si3 Al2 K O7"
+	}
+}	
+	
+Ore
+{
+	Quartz
+	{
+	}
+	Chrysoberyl
+	{
+	}
+	Amber
+	{
+	}
+	Amethyst
+	{
+	}
+	Topaz
+	{
+	}
+	Aquamarine
+	{
+	}
+	Bauxite
+	{
+	}
+	Bismuthinite
+	{
+	}
+	Citrine
+	{
+	}
+	Cassiterite
+	{
+	}
+	Cinnabar
+	{
+	}
+	Chromite
+	{
+	}
+	Diamond
+	{
+	}
+	Emerald
+	{
+	}
+	Ruby
+	{
+	}
+	Sapphire
+	{
+	}
+	Galena
+	{
+	}
+	NativeCopper
+	{
+	}
+	NativeSilver
+	{
+	}
+	NativeGold
+	{
+	}
+	Graphite
+	{
+	}
+	Garnet
+	{
+	}
+	Hematite
+	{
+	}
+	Opal
+	{
+	}
+	Ice
+	{
+	}
+	Jade
+	{
+	}
+	Jet
+	{
+	}
+	Kaolinite
+	{
+	}
+	LapisLazuli
+	{
+	}
+	Lignite
+	{
+	}
+	Limonite
+	{
+	}
+	Magnetite
+	{
+	}
+	Onyx
+	{
+	}
+	Olivine
+	{
+	}
+	Halite
+	{
+	}
+	Obsidian
+	{
+	}
+	Flint
+	{
+	}
+	Pyrite
+	{
+	}
+	Uranium
+	{
+	}
+	Sphalerite
+	{
+	}
+	Sulfur
+	{
+	}
+	Stannite
+	{
+	}
+	Tourmaline
+	{
+	}
+	Tungstite
+	{
+	}
+	Cuprite
+	{
+	}
+	Wolframite
+	{
+	}
+	Zincite
+	{
+	}
+	Malachite
+	{
+	}
+	Garnierite
+	{
+	}
+	Beryl
+	{
+	}
+	Borax
+	{
+	}
+	Anthracite
+	{
+	}
+	BituminousCoal
+	{
+	}
+}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Data allocation for elements:
+	metal/non-metal - 1 bit
+	mass? - 2 bits
+	element - 2 bits
+
+	List of Elements to be used:
+		H, He, Be, B, C, N, O, Ne, Na, Mg, Al, Si, P, S, Cl, K, Ca, Cr, Fe, Co, Ni, Cu, Zn, Br, Ag, Sn, Au, Hg, Pb, U
+
+	Sort A
+		0:
+		H, He, Be, B, C, N, O, Ne, Na, Mg, P, S, Cl, K, Ca, Br
+		1:
+		Al, Si, Cr, Fe, Co, Ni, Cu, Zn, Ag, Sn, Au, Hg, Pb, U
+
+	Sort B
+		000:
+		H, He, Be, B
+		001:
+		C, N, O, Ne
+		010:
+		Na, Mg, P, S
+		011:
+		Cl, K, Ca, Br
+		100:
+		Al, Si, Cr, Fe
+		101:
+		Co, Ni, Cu, Zn
+		110:
+		Ag, Sn, W, Au
+		111:
+		Hg, Pb, Bi, U
+
+ELEMENTS (5 bits, the 3 at the beginning is the abundance):
+	11100000 - H
+	11100001 - He 
+	11100010 - Be
+	11100011 - B
+	11100100 - C
+	11100101 - N
+	11100110 - O
+	11100111 - Ne
+	11101000 - Na
+	11101001 - Mg
+	11101010 - P
+	11101011 - S
+	11101100 - Cl
+	11101101 - K
+	11101110 - Ca
+	11101111 - Br
+	11110000 - Al
+	11110001 - Si
+	11110010 - Cr
+	11110011 - Fe
+	11110100 - Co
+	11110101 - Ni
+	11110110 - Cu
+	11110111 - Zn
+	11111000 - Ag
+	11111001 - Sn
+	11111010 - W
+	11111011 - Au
+	11111100 - Hg
+	11111101 - Pb
+	11111110 - Bi
+	11111111 - U
+
+
+
+
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+
+
+
+
