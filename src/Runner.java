@@ -3,11 +3,8 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
 
 import javax.swing.JFrame;
 
@@ -19,11 +16,10 @@ import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
+
  
 public class Runner 
 {
-	//TODO: convert current degrees measures into radians for easier access
-	//Use player position and rotation values instead of ones in this class
 	//note: OpenGL actually uses degrees for their matrix transforms.
 	
 	//a list of blocks to use / world reference
@@ -40,10 +36,22 @@ public class Runner
 	
 	/** is VSync Enabled */
 	boolean vsync;
+
+	long curr = 0, last = 0; //for timing debug
 	
-	GUICanvas canvas;
+	/* place this anywhere for a time debug
+	curr = System.currentTimeMillis();
+	System.out.println((curr-last)/1000.0);
+	last = curr;
+	*/
+	
+	boolean isCloseRequested;
+	
+	static boolean mouseLock = true;
+	static boolean pauseLock = false;
  
 	public void start() {
+		//Mouse.setGrabbed(true);
 		try {
 			world = new World(this);
 			player = world.player;
@@ -54,19 +62,11 @@ public class Runner
 			System.exit(0);
 		}
 		
-		JFrame f = new JFrame();
-		canvas = new GUICanvas(this);
-		f.add(canvas);
-		f.setLocation(200,100);
-		f.setSize(50,200);
-		f.setDefaultCloseOperation(3);
-		f.setVisible(true);
- 
 		initGL(); // init OpenGL
 		getDelta(); // call once before loop to initialise lastFrame
 		lastFPS = getTime(); // call before loop to initialise fps timer
  
-		while (!Display.isCloseRequested()) 
+		while (!isCloseRequested) 
 		{
 			int delta = getDelta();
  
@@ -74,8 +74,6 @@ public class Runner
 			
 			if (Display.isActive() || Display.isDirty() || Display.isVisible())
 				renderGL();
-			
-			canvas.paint(canvas.getGraphics());
  
 			Display.update();
 			Display.sync(60); // cap fps to 60fps
@@ -83,11 +81,43 @@ public class Runner
  
 		Display.destroy();
 	}
- 
+	
+	//used to refocus mouse into center of the window.
+ 	int counter = 0;
+ 	
 	public void update(int delta) 
 	{
-		//player.yaw -= (player.rotspeed*delta)*Mouse.getDX()*.15;
-		//player.pitch += (player.rotspeed*delta)*Mouse.getDY()*.15;
+		/*
+		//~~~Mouse controls~~~//
+		if (mouseLock)
+		{
+			if (Display.isActive())
+			{
+					player.yaw -= (player.rotspeed*delta)*Mouse.getDX()*.08;
+					player.pitch += (player.rotspeed*delta)*Mouse.getDY()*.08;
+					if (player.pitch > Math.PI/2)
+						player.pitch = (float)Math.PI/2;
+					if (player.pitch < -Math.PI/2)
+						player.pitch = -(float)Math.PI/2;
+			}
+		}
+		//~~~.Mouse controls~~~//
+		
+		if (Keyboard.isKeyDown(Keyboard.KEY_ESCAPE))
+		{
+			if (!pauseLock)
+			{
+				mouseLock=!mouseLock;
+				Mouse.setGrabbed(mouseLock);
+				pauseLock = true;
+			}
+			if (!Keyboard.getEventKeyState())
+				pauseLock = false;
+		}
+		*/
+		
+		if (Display.isCloseRequested())
+			isCloseRequested = true;
 		
 		if (Keyboard.isKeyDown(Keyboard.KEY_I)) 
 		{
@@ -108,9 +138,6 @@ public class Runner
 		if (player.yaw < -Math.PI) player.yaw += 2*(float)Math.PI;
 		if (player.yaw > Math.PI) player.yaw -= 2*(float)Math.PI;
 		
-		//if (Keyboard.isKeyDown(Keyboard.KEY_U)) roll -= rotspeed * delta;
-		//if (Keyboard.isKeyDown(Keyboard.KEY_O)) roll += rotspeed * delta;
- 
 		/*
 			x' = x cos a cos b - y (cos a cos c sin b + sin a sin c) + z (cos a sin b sin c - cos c sin a)
 			y' = x sin b + y cos b cos c - z cos b sin c
@@ -182,17 +209,6 @@ public class Runner
 		{
 			player.pos.w += delta*player.speed;
 		}
-		//W/S
-		//z -= speed * Math.cos( Math.toRadians(yaw) ) * delta;
-		//x -= speed * Math.sin( Math.toRadians(yaw) ) * delta;
-		//A/D
-		//x -= speed * Math.cos( Math.toRadians(yaw) ) * delta;
-		//z -= speed * Math.sin( Math.toRadians(yaw) ) * delta;
-		
-		
-		//if (Keyboard.isKeyDown(Keyboard.KEY_Q)) z += 0.05f * delta;
-		//if (Keyboard.isKeyDown(Keyboard.KEY_E)) z -= 0.05f * delta;
- 
 		
 		while (Keyboard.next()) {
 		    if (Keyboard.getEventKeyState()) {
@@ -327,9 +343,6 @@ public class Runner
 		GL11.glDepthFunc(GL11.GL_LEQUAL);                         // The Type Of Depth Test To Do
 		GL11.glHint(GL11.GL_PERSPECTIVE_CORRECTION_HINT, GL11.GL_NICEST);
 	}
- 
-	///***LOOK!**////
-	Byte[] order;
 	
 	public void renderGL() {
 		
@@ -338,7 +351,16 @@ public class Runner
  
 		// R,G,B,A Set The Color To Blue One Time Only
 		
+		curr = System.currentTimeMillis();
+		//System.out.println("start "+(curr-last));
+		last = curr;
+		
 		world.prepareRender();
+		//This function prepares world.sides for the correct rendering stuff, *including* a sort
+		
+		//curr = System.currentTimeMillis();
+		//System.out.println("prep "+(curr-last));
+		//last = curr;
 		
 		//render!!
 		//make sure not to render things that are outside of the relevant view
@@ -349,86 +371,29 @@ public class Runner
 		GL11.glRotatef(-(float)Math.toDegrees(player.yaw), 0, 1, 0);
 		GL11.glTranslatef(-(float)player.pos.x, -(float)player.pos.y, -(float)player.pos.z);
 		
-		//order = getSideOrder();
-		
-		for (Chunk c : world.loaded)
+		if (world.sides != null && world.sides.size() > 0)
 		{	
-			/*
-			for (Byte o : order)
-			{	
-				if (o.intValue() == 0)
-					for (BlockSide e : c.right)
-						renderBlockFace(e);
-				if (o.intValue() == 1)
-					for (BlockSide e : c.left)
-						renderBlockFace(e);
-				if (o.intValue() == 2)
-					for (BlockSide e : c.up)
-						renderBlockFace(e);
-				if (o.intValue() == 3)
-					for (BlockSide e : c.down)
-						renderBlockFace(e);
-				if (o.intValue() == 4)
-					for (BlockSide e : c.front)
-						renderBlockFace(e);
-				if (o.intValue() == 5)
-					for (BlockSide e : c.back)
-						renderBlockFace(e);
-			}
-			*/
+			//for (int i = 0; i < world.sides.size(); i++)
+			//{
+			//	System.out.print(world.sides.get(i).value);
+			//}
+			//System.out.println();
 			
-			for (BlockSide e : c.sides)
+			for (BlockSide e : world.sides)
 			{
 				renderBlockFace(e);
 			}
+			
+			curr = System.currentTimeMillis();
+			//System.out.println("rend "+(curr-last));
+			last = curr;
+			
 		}
 		
 		GL11.glTranslatef((float)player.pos.x, (float)player.pos.y, (float)player.pos.z);
 	}
 	
-	public Byte[] getSideOrder()
-	{
-		//create a linear interpolation of the user's current direction
-		//let it collide with the 1x1x1 box of the player
-		//at that collision point, find the order of the sides, closest to farthest
-		//this gives the list of sides that are farthest to closest.
-		
-		Point4D test = new Point4D(-Math.cos(player.pitch) * Math.sin(player.yaw), Math.sin(player.pitch), -Math.cos(player.pitch) * Math.cos(player.yaw), 0);
-		
-		Map<Byte, Double> a = new HashMap<Byte, Double>();
-		a.put(new Byte((byte)0), test.dist(new Point4D(1,0,0,0)));
-		a.put(new Byte((byte)1), test.dist(new Point4D(-1,0,0,0)));
-		a.put(new Byte((byte)2), test.dist(new Point4D(0,1,0,0)));
-		a.put(new Byte((byte)3), test.dist(new Point4D(0,-1,0,0)));
-		a.put(new Byte((byte)4), test.dist(new Point4D(0,0,1,0)));
-		a.put(new Byte((byte)5), test.dist(new Point4D(0,0,-1,0)));
-		
-		class DoubleComparator implements Comparator<Byte>
-		{
-			Map<Byte, Double> base;
-			public DoubleComparator(Map<Byte, Double> base) {
-		    	this.base = base;
-		    }
-		    
-		    // Note: this comparator imposes orderings that are inconsistent with equals.    
-		    public int compare(Byte a, Byte b) {
-		    	if (base.get(a) >= base.get(b)) {
-		            return 1;
-		        } else {
-		            return -1;
-		        } // returning 0 would merge keys
-		    	//Note that this will create a reverse ordering because the farthest objects must be rendered first for blending to work
-		    }
-		}
-		
-        DoubleComparator comp =  new DoubleComparator(a);
-        TreeMap<Byte,Double> sorted = new TreeMap<Byte,Double>(comp);
-        sorted.putAll(a);
-        
-        Byte[] res = new Byte[6];
-        sorted.keySet().toArray(res);
-		return res;
-	}
+	float prevalpha = 1.0f;
 	
 	public float alphaFunction(Point4D p)
 	{
@@ -438,6 +403,10 @@ public class Runner
 		if (alpha > 1)
 			alpha = 1;
 		
+		//if (alpha != prevalpha)
+		//	System.out.println(prevalpha + " --> " +alpha);
+			
+		prevalpha = alpha;
 		return alpha;
 	}
 	
@@ -512,43 +481,5 @@ public class Runner
 	public static void main(String[] argv) {
 		Runner runner = new Runner();
 		runner.start();
-	}
-}
-
-class GUICanvas extends Canvas
-{
-	Runner parent;
-	Image mem;
-	Graphics2D g2;
-	
-	public GUICanvas(Runner a)
-	{ parent = a; }
-	
-	public void paint(Graphics g)
-	{
-		mem = createImage(getWidth(), getHeight());
-		g2 = (Graphics2D)mem.getGraphics();
-		
-		g2.setColor(Color.white);
-		g2.fillRect(0, 0, 100, 300);
-		g2.setColor(Color.black);
-		g2.drawString(""+parent.player.movedamp,0,0);
-		g2.drawString(""+parent.player.pos.x,0,10);
-		g2.drawString(""+parent.player.pos.y,0,20);
-		g2.drawString(""+parent.player.pos.z,0,30);
-		g2.drawString(""+parent.player.pos.w,0,40);
-		g2.drawString(""+parent.player.yaw,0,50);
-		g2.drawString(""+parent.player.pitch,0,60);
-		//g2.drawString(""+parent.player.roll,0,70);
-		//g2.drawString(""+parent.player.wane,0,80);
-		
-		/*
-		String order = "";
-		for (int i = 0; i < parent.order.length; i++)
-			order = order + parent.order[i].toString() + ", ";
-		
-		g2.drawString(""+order,0,70);
-		*/
-		g.drawImage(mem, 0,0, this);
 	}
 }

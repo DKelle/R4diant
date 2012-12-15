@@ -1,6 +1,8 @@
 import java.util.ArrayList;
 import java.util.Collections;
 
+import org.lwjgl.input.Keyboard;
+
 
 //an 8x8x8x8 chunk
 public class Chunk implements Comparable
@@ -13,18 +15,10 @@ public class Chunk implements Comparable
 	Block[][][][] data = new Block[8][8][8][8];
 	ArrayList<Entity> entities;
 	byte[][][] biome = new byte[8][8][8];
-	ArrayList<Block> toRender;
 	
-	ArrayList<BlockSide> sides;
+	//ArrayList<BlockSide> sides;
 	
-	//ArrayList<BlockSide> right;
-	//ArrayList<BlockSide> left;
-	//ArrayList<BlockSide> up;
-	//ArrayList<BlockSide> down;
-	//ArrayList<BlockSide> front;
-	//ArrayList<BlockSide> back;
-	
-	boolean needsUpdate = false;
+	boolean needsUpdate = true;
 	//hint: this data will probably be accessed wzyx
 	
 	
@@ -37,7 +31,6 @@ public class Chunk implements Comparable
 		w = d;
 		
 		data = new Block[8][8][8][8];
-		toRender = new ArrayList<Block>();
 	}
 
 	public int compareTo(Object o) 
@@ -55,9 +48,14 @@ public class Chunk implements Comparable
 	
 	public void prepareForRender()
 	{	
-		toRender = new ArrayList<Block>();
-		if (!needsUpdate && !world.player.isInView(this))
+		if (!world.player.isInView(this))
 			return;
+		
+		if (!needsUpdate)
+		{
+			return;
+		}
+		
 		for (int i = 0; i < data.length; i++)
 		{
 			for (int j = 0; j < data[0].length; j++)
@@ -73,156 +71,44 @@ public class Chunk implements Comparable
 						data[i][j][k][l].checkSides();
 						if ( data[i][j][k][l].sides != Byte.MAX_VALUE )
 						{
-							toRender.add(data[i][j][k][l]);
+							Block b = data[i][j][k][l];
+							//distance = -cos(pitch)*sin(yaw)*dx + sin(pitch)*dy + cos(pitch)*cos(yaw)*dz
+							Player player = b.chunk.world.player; //reference
+							Point4D point = b.getPosition();
+							
+							if ((data[i][j][k][l].sides & 1) == 0)
+								world.existing.add(new BlockSide(b, (byte)0));
+							if ((b.sides & 2) == 0)
+								world.existing.add(new BlockSide(b, (byte)1));
+							if ((b.sides & 4) == 0)
+								world.existing.add(new BlockSide(b, (byte)2));
+							if ((b.sides & 8) == 0)
+								world.existing.add(new BlockSide(b, (byte)3));
+							if ((b.sides & 16) == 0)
+								world.existing.add(new BlockSide(b, (byte)4));
+							if ((b.sides & 32) == 0)
+								world.existing.add(new BlockSide(b, (byte)5));
 						}
 					}
 				}
 			}
 		}
-		Collections.sort(toRender);
-		makeSideSoup();
+		//Collections.sort(toRender);
 		needsUpdate = false;
 	}
 	
 	public double playerDistance()
 	{
-		Point4D pos = new Point4D(x*8+4, y*8+4, z*8+4, w*8+4);
-		return pos.dist(world.player.pos);
+		return world.player.pos.dist(getPosition());
 	}
 	
 	public double[] playerDirection()
 	{
-		Point4D pos = new Point4D(x*8+4, y*8+4, z*8+4, w*8+4);
-		return world.player.pos.angles(pos);
+		return world.player.pos.angles(getPosition());
 	}
 	
-	
-	
-	public void makeSideSoup()
+	public Point4D getPosition()
 	{
-		sides = new ArrayList<BlockSide>();
-		/*
-		make a side soup
-		right = new ArrayList<BlockSide>();
-		left  = new ArrayList<BlockSide>();
-		up    = new ArrayList<BlockSide>();
-		down  = new ArrayList<BlockSide>();
-		front = new ArrayList<BlockSide>();
-		back  = new ArrayList<BlockSide>();
-		*/
-		
-		//add sides to the list if they are visible
-		for (Block e : toRender)
-		{
-			if ((e.sides & 1) == 0)
-				sides.add(new BlockSide(e, (byte)0));
-			if ((e.sides & 2) == 0)
-				sides.add(new BlockSide(e, (byte)1));
-			if ((e.sides & 4) == 0)
-				sides.add(new BlockSide(e, (byte)2));
-			if ((e.sides & 8) == 0)
-				sides.add(new BlockSide(e, (byte)3));
-			if ((e.sides & 16) == 0)
-				sides.add(new BlockSide(e, (byte)4));
-			if ((e.sides & 32) == 0)
-				sides.add(new BlockSide(e, (byte)5));
-			
-			/*
-			if ((e.sides & 1) == 0)
-				right.add(new BlockSide(e, (byte)0));
-			if ((e.sides & 2) == 0)
-				left.add(new BlockSide(e, (byte)1));
-			if ((e.sides & 4) == 0)
-				up.add(new BlockSide(e, (byte)2));
-			if ((e.sides & 8) == 0)
-				down.add(new BlockSide(e, (byte)3));
-			if ((e.sides & 16) == 0)
-				front.add(new BlockSide(e, (byte)4));
-			if ((e.sides & 32) == 0)
-				back.add(new BlockSide(e, (byte)5));
-				*/
-		}
-		
-		Collections.sort(sides);
-		/*
-		Collections.sort(right);
-		Collections.sort(left);
-		Collections.sort(up);
-		Collections.sort(down);
-		Collections.sort(front);
-		Collections.sort(back);
-		*/
-	}
-	
-}
-
-class BlockSide implements Comparable
-{
-	Block parent;
-	byte value = -1;
-	//temporary
-	String id;
-	//0-7: +x, -x, +y, -y, +z, -z, (+w, -w)
-	
-	public BlockSide(Block p, byte v)
-	{
-		parent = p;
-		value = v;
-		
-		//temporary
-		id = parent.getPosition().toString()+" "+v;
-	}
-
-	public int compareTo(Object o) 
-	{
-		if (!(o instanceof BlockSide))
-			return 0;
-		
-		//player.pos.x -= player.movedamp * player.speed * delta * Math.cos(player.pitch) * Math.sin(player.yaw);
-		//player.pos.y += player.movedamp * player.speed * delta * Math.sin(player.pitch);
-		//player.pos.z -= player.movedamp * player.speed * delta * Math.cos(player.pitch) * Math.cos(player.yaw);
-		
-		//distance = -cos(pitch)*sin(yaw)*dx + sin(pitch)*dy + cos(pitch)*cos(yaw)*dz
-		Point4D point = parent.getPosition().add(getOffset());
-		Point4D other = ((BlockSide)o).parent.getPosition().add( ((BlockSide)o).getOffset() );
-		
-		
-		//double distance = -Math.cos(player.pitch)*Math.sin(player.yaw)*(point.x - player.pos.x) + Math.sin(player.pitch)*(point.y - player.pos.y) + Math.cos(player.pitch)*Math.cos(player.yaw)*(point.z - player.pos.z)						
-		Player player = parent.chunk.world.player; //reference
-		Point4D playerpos = player.pos; //this needs to be without w or w will screw things up here
-		
-		double dista = -Math.cos(player.pitch)*Math.sin(player.yaw)*(point.x - player.pos.x) + Math.sin(player.pitch)*(point.y - player.pos.y) - Math.cos(player.pitch)*Math.cos(player.yaw)*(point.z - player.pos.z);						
-		double distb = -Math.cos(player.pitch)*Math.sin(player.yaw)*(other.x - player.pos.x) + Math.sin(player.pitch)*(other.y - player.pos.y) - Math.cos(player.pitch)*Math.cos(player.yaw)*(other.z - player.pos.z);						
-
-		//double dista = parent.getPosition().add(getOffset()).dist(new Point4D(playerpos.x, playerpos.y, playerpos.z, 0));
-		//double distb = ((BlockSide)o).parent.getPosition().add(getOffset()).dist(new Point4D(playerpos.x, playerpos.y, playerpos.z, 0));
-		
-		//this large number makes the distinction higher
-		//the negative sorts in reverse order
-		return (int)(-1000*1000*(dista - distb));
-		
-	}
-	
-	public Point4D getOffset()
-	{
-		Point4D res = new Point4D(0,0,0,0);
-		
-		if (value == 0)
-			res.x = 0.5;
-		else if (value == 1)
-			res.x = -0.5;
-		else if (value == 2)
-			res.y = 0.5;
-		else if (value == 3)
-			res.y = -0.5;
-		else if (value == 4)
-			res.z = 0.5;
-		else if (value == 5)
-			res.z = -0.5;
-		
-		//this added to make sure that the sides still render in the right place. It's messy, but necessary.
-		res.w = -parent.getPosition().w;
-		
-		return res;
+		return new Point4D(x*8+4, y*8+4, z*8+4, w*8+4);
 	}
 }

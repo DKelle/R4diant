@@ -33,17 +33,12 @@ public class Player extends Living
 	
 	public boolean isInView(Chunk c)
 	{
+		Point4D point = c.getPosition();
+		return (!(-Math.cos(pitch)*Math.sin(yaw)*(point.x - pos.x) + Math.sin(pitch)*(point.y - pos.y) - Math.cos(pitch)*Math.cos(yaw)*(point.z - pos.z) < -4
+				||   Math.abs(pos.w - point.w) > 5));
+		
 		//Note: this is still not fixed. Angles are complicated. :/
 		//return true if you can see a chunk (because otherwise it would be a waste of memory)
-		if (c.playerDistance() < 10)
-			return true;
-		
-		if (!(Math.abs(c.playerDirection()[0]-yaw) < Math.PI || Math.abs(c.playerDirection()[0]+yaw) < Math.PI))
-		{
-			System.out.println("Not rendering.");
-		}
-		
-		return (Math.abs(c.playerDirection()[0]-yaw) < Math.PI || Math.abs(c.playerDirection()[0]+yaw) < Math.PI);
 		//very primitive, but it should at least save some time
 	}
 }

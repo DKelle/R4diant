@@ -291,27 +291,4 @@ public class Block implements Comparable
 		return getPosition().dist(chunk.world.player.pos);
 	}
 	
-	public byte[] getSideRenderOrder()
-	{
-		//based on farthest sides from the player
-		ArrayList<Double> temp = new ArrayList<Double>();
-		
-		Point4D p = getPosition();
-		temp.add( p.add(new Point4D(0.5,0,0,0)) .dist(chunk.world.player.pos));
-		temp.add( p.add(new Point4D(-0.5,0,0,0)) .dist(chunk.world.player.pos));
-		temp.add( p.add(new Point4D(0,0.5,0,0)) .dist(chunk.world.player.pos));
-		temp.add( p.add(new Point4D(0,-0.5,0,0)) .dist(chunk.world.player.pos));
-		temp.add( p.add(new Point4D(0,0,0.5,0)) .dist(chunk.world.player.pos));
-		temp.add( p.add(new Point4D(0,0,-0.5,0)) .dist(chunk.world.player.pos));
-		
-		byte[] res = new byte[6];
-		for (int i = 0; i < 6; i++)
-		{
-			res[i] = (byte)temp.indexOf(Collections.max(temp));
-			temp.set(res[i], -1.0);
-		}
-		
-		return res;
-	}
-
 }
