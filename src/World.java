@@ -30,6 +30,9 @@ public class World
 		}
 		trimSides();
 		
+		if (sides.size() != 11)
+			System.out.println("Failed: "+sides.size());
+		
 		parent.curr = System.currentTimeMillis();
 		//System.out.println("prep "+(parent.curr-parent.last));
 		parent.last = parent.curr;
@@ -58,25 +61,97 @@ public class World
 	{
 		if (existing.size() > 0)
 		{
-			ArrayList<BlockSide> visited = new ArrayList<BlockSide>(); //the ids
+			//Add objects in sorted position (linear time)
+			ArrayList<BlockSide> visited = new ArrayList<BlockSide>(); 
+			
 			sides = new ArrayList<BlockSide>(); 
 			
 			for (BlockSide e : existing)
 			{
-				double a = -Math.cos(player.pitch)*Math.sin(player.yaw)*(e.parent.getPosition().add(e.getOffset()).x - player.pos.x) + Math.sin(player.pitch)*(e.parent.getPosition().add(e.getOffset()).y - player.pos.y) - Math.cos(player.pitch)*Math.cos(player.yaw)*(e.parent.getPosition().add(e.getOffset()).z - player.pos.z);
+				double a = -Math.cos(player.pitch)*Math.sin(player.yaw)*(e.parent.getPosition().add(e.getOffset(false)).x - player.pos.x) 
+						+ Math.sin(player.pitch)*(e.parent.getPosition().add(e.getOffset(false)).y - player.pos.y) 
+						- Math.cos(player.pitch)*Math.cos(player.yaw)*(e.parent.getPosition().add(e.getOffset(false)).z - player.pos.z);
 				double b = parent.alphaFunction(e.parent.getPosition());
 				
 				double renderdist = 50;
 				if (a < 0 || a > renderdist || b == 0)
 					continue;
 				
-				//find matching id using binary search
 				
+				
+				//find matching id using binary search
+				//binary search (logarithmic time)
+				int index = binarySearch(0, visited.size()-1, e.id, visited);
+				if (index != -1)
+				{	
+					BlockSide o = visited.get(index);
+					//System.out.println("a");
+					if (parent.alphaFunction(o.parent.getPosition()) > b)
+					{
+						continue;
+					}
+					else
+					{
+						if (sides.indexOf(o) != -1) 
+							sides.remove(sides.indexOf(o));
+					}
+				}
+				
+				
+				//add to the visited array (linear time)
+				for (int  i = 0; i < visited.size(); i++)
+				{
+					//special case
+					if (i == 0 && e.id.compareTo(visited.get(i).id) < 0)
+					{
+						visited.add(0, e);
+					}
+					
+					//base case
+					if (e.id.compareTo(visited.get(i).id) > 0)
+					{
+						visited.add(i+1, e);
+						break;
+					}
+				}
+				
+				//starting case
+				if (visited.size() == 0)
+					visited.add(e);
+				
+				sides.add(e);
+				
+				/*
+				//add sides in sorted order (attempt)
+				for (int  i = 0; i < sides.size(); i++)
+				{
+					//special case
+					if (i == 0 && e.compareTo(sides.get(i)) < 0)
+					{
+						sides.add(0, e);
+					}
+					
+					//base case
+					if (e.compareTo(sides.get(i)) > 0)
+					{
+						sides.add(i+1, e);
+						break;
+					}
+				}
+				
+				//starting case
+				if (sides.size() == 0)
+					sides.add(e);
+				*/
+				
+				
+				
+				/* Previous code:
 				int index = visited.indexOf(e.id);
 				
 				for (BlockSide o : visited)
 				{
-					if (e.id == o.id)
+					if (e.id.equals(o.id))
 					{
 						if (parent.alphaFunction(o.parent.getPosition()) > b)
 							continue;
@@ -86,10 +161,46 @@ public class World
 				}
 				
 				visited.add(e);
-				
 				sides.add(e);
+				*/
 			}
 		}
+	}
+
+	public int binarySearch(int startIndex, int endIndex, String key, ArrayList<BlockSide> array) 
+	{
+		if (startIndex < 0 || startIndex >= array.size() || endIndex < 0 || endIndex >= array.size())
+		{
+			//indices out of bounds.
+			//System.out.println("Indices out of bounds..?");
+			return -1;
+		}
+		if (startIndex > endIndex)
+		{
+			System.out.println("What happened?");
+		}
+		
+		
+		int middleIndex = (startIndex + endIndex)/2;
+		
+		if (startIndex == middleIndex && !array.get( middleIndex ).id.equals(key))
+		{
+			return -1;
+		}
+		
+		if (array.get( middleIndex ).id.equals(key))
+		{
+			return middleIndex;
+		}
+		else if (key.compareTo(array.get( middleIndex ).id) < 0) //key is less than index
+		{
+			return binarySearch(startIndex, middleIndex-1, key, array);
+		}
+		else if (key.compareTo(array.get( middleIndex ).id) > 0) //key is greater than index
+		{
+			return binarySearch(middleIndex+1, endIndex, key, array);
+		}
+		return -1;
 	}
 }
 
@@ -99,7 +210,6 @@ class BlockSide implements Comparable
 {
 	Block parent;
 	byte value = -1;
-	//temporary
 	String id;
 	//0-7: +x, -x, +y, -y, +z, -z, (+w, -w)
 	
@@ -108,8 +218,7 @@ class BlockSide implements Comparable
 		parent = p;
 		value = v;
 		
-		//temporary
-		id = parent.getPosition().toString()+" "+v;
+		id = parent.getPosition().add(getOffset(false)).toString();
 	}
 
 	public int compareTo(Object o) 
@@ -122,8 +231,8 @@ class BlockSide implements Comparable
 		//player.pos.z -= player.movedamp * player.speed * delta * Math.cos(player.pitch) * Math.cos(player.yaw);
 		
 		//distance = -cos(pitch)*sin(yaw)*dx + sin(pitch)*dy + cos(pitch)*cos(yaw)*dz
-		Point4D point = parent.getPosition().add(getOffset());
-		Point4D other = ((BlockSide)o).parent.getPosition().add( ((BlockSide)o).getOffset() );
+		Point4D point = parent.getPosition().add(getOffset(false));
+		Point4D other = ((BlockSide)o).parent.getPosition().add( ((BlockSide)o).getOffset(false) );
 		
 		
 		//double distance = -Math.cos(player.pitch)*Math.sin(player.yaw)*(point.x - player.pos.x) + Math.sin(player.pitch)*(point.y - player.pos.y) + Math.cos(player.pitch)*Math.cos(player.yaw)*(point.z - player.pos.z)						
@@ -141,7 +250,7 @@ class BlockSide implements Comparable
 		
 	}
 	
-	public Point4D getOffset()
+	public Point4D getOffset(boolean includeW)
 	{
 		Point4D res = new Point4D(0,0,0,0);
 		
@@ -158,8 +267,9 @@ class BlockSide implements Comparable
 		else if (value == 5)
 			res.z = -0.5;
 		
-		//this added to make sure that the sides still render in the right place. It's messy, but necessary.
-		res.w = -parent.getPosition().w;
+		if (!includeW)
+			//this added to make sure that the sides still render in the right place. It's messy, but necessary.
+			res.w = -parent.getPosition().w;
 		
 		return res;
 	}
