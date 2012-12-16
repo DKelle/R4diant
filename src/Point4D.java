@@ -1,5 +1,5 @@
 
-public class Point4D
+public class Point4D implements Comparable
 {
 	double x = 0, y = 0, z = 0, w = 0;
 	
@@ -155,4 +155,28 @@ public class Point4D
 		
 		return "( "+tx+", "+ty+", "+tz+", "+tw+" )";
 	}
+	
+	
+	public int compareTo(Object o) 
+	{
+		if ( w == ((Point4D)o).w )
+		{
+			if ( z == ((Point4D)o).z )
+			{
+				if ( y == ((Point4D)o).y )
+				{
+					if ( x == ((Point4D)o).x )
+					{
+						return 0;
+					}
+					return Double.compare(x, ((Point4D)o).x);
+				}
+				return Double.compare(y, ((Point4D)o).y);
+			}
+			return Double.compare(z, ((Point4D)o).z);
+		}
+		return Double.compare(w, ((Point4D)o).w);
+	}
+	
+	
 }

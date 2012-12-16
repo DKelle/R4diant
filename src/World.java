@@ -30,8 +30,8 @@ public class World
 		}
 		trimSides();
 		
-		if (sides.size() != 11)
-			System.out.println("Failed: "+sides.size());
+		//if (sides.size() != 11)
+		//	System.out.println("Failed: "+sides.size());
 		
 		parent.curr = System.currentTimeMillis();
 		//System.out.println("prep "+(parent.curr-parent.last));
@@ -81,7 +81,7 @@ public class World
 				
 				//find matching id using binary search
 				//binary search (logarithmic time)
-				int index = binarySearch(0, visited.size()-1, e.id, visited);
+				int index = binarySearch(0, visited.size()-1, e, visited);
 				if (index != -1)
 				{	
 					BlockSide o = visited.get(index);
@@ -94,23 +94,25 @@ public class World
 					{
 						if (sides.indexOf(o) != -1) 
 							sides.remove(sides.indexOf(o));
+						if (visited.indexOf(o) != -1) 
+							visited.remove(visited.indexOf(o));
 					}
 				}
 				
 				
 				//add to the visited array (linear time)
 				for (int  i = 0; i < visited.size(); i++)
-				{
+				{	
 					//special case
-					if (i == 0 && e.id.compareTo(visited.get(i).id) < 0)
+					if (e.getPosition().compareTo(visited.get(i).getPosition()) <= 0)
 					{
-						visited.add(0, e);
+						visited.add(i, e);
+						break;
 					}
 					
-					//base case
-					if (e.id.compareTo(visited.get(i).id) > 0)
+					if (i == visited.size()-1)
 					{
-						visited.add(i+1, e);
+						visited.add(e);
 						break;
 					}
 				}
@@ -167,7 +169,7 @@ public class World
 		}
 	}
 
-	public int binarySearch(int startIndex, int endIndex, String key, ArrayList<BlockSide> array) 
+	public int binarySearch(int startIndex, int endIndex, BlockSide key, ArrayList<BlockSide> array) 
 	{
 		if (startIndex < 0 || startIndex >= array.size() || endIndex < 0 || endIndex >= array.size())
 		{
@@ -183,24 +185,19 @@ public class World
 		
 		int middleIndex = (startIndex + endIndex)/2;
 		
-		if (startIndex == middleIndex && !array.get( middleIndex ).id.equals(key))
+		if (startIndex == endIndex)
 		{
-			return -1;
+			return (key.getPosition().compareTo(array.get( middleIndex ).getPosition()) == 0) ? middleIndex : -1;
 		}
-		
-		if (array.get( middleIndex ).id.equals(key))
+		else if (key.getPosition().compareTo(array.get( middleIndex ).getPosition()) < 0) //key is less than index
 		{
-			return middleIndex;
+			return binarySearch(startIndex, middleIndex, key, array);
 		}
-		else if (key.compareTo(array.get( middleIndex ).id) < 0) //key is less than index
-		{
-			return binarySearch(startIndex, middleIndex-1, key, array);
-		}
-		else if (key.compareTo(array.get( middleIndex ).id) > 0) //key is greater than index
+		else if (key.getPosition().compareTo(array.get( middleIndex ).getPosition()) > 0) //key is greater than index
 		{
 			return binarySearch(middleIndex+1, endIndex, key, array);
 		}
-		return -1;
+		return middleIndex;
 	}
 }
 
@@ -219,6 +216,11 @@ class BlockSide implements Comparable
 		value = v;
 		
 		id = parent.getPosition().add(getOffset(false)).toString();
+	}
+	
+	public Point4D getPosition()
+	{
+		return parent.getPosition().add(getOffset(false));
 	}
 
 	public int compareTo(Object o) 
