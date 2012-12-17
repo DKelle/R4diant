@@ -1,5 +1,6 @@
 import java.awt.Canvas;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -17,6 +18,7 @@ import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
 
+import org.newdawn.slick.TrueTypeFont;
  
 public class Runner 
 {
@@ -36,8 +38,37 @@ public class Runner
 	
 	/** is VSync Enabled */
 	boolean vsync;
+	boolean jump;
+	boolean onGround = true;
+	boolean removeChunk;
+	boolean removeBlock;
+	boolean switched;
+	byte canMoves; //(z-)(z+)(y-)(y+)(x-)(x+) 
+	Block playerBlock;
+	double velX;
+	double velY;
+	double velZ;
+	double velW;
+	double gravity = .005;
+	short tempX;
+	short tempY;
+	short tempZ;
+	short tempW;
+	short temp2X;
+	short temp2Y;
+	short temp2Z;
+	short temp2W;
 
 	long curr = 0, last = 0; //for timing debug
+	
+	boolean flying;
+
+	private enum GameState
+	{
+		PAUSED,IN_GAME,MAIN_MENU;
+	}
+	
+	GameState state = GameState.IN_GAME;
 	
 	/* place this anywhere for a time debug
 	curr = System.currentTimeMillis();
@@ -47,8 +78,7 @@ public class Runner
 	
 	boolean isCloseRequested;
 	
-	static boolean mouseLock = true;
-	static boolean pauseLock = false;
+	private TrueTypeFont font;
  
 	public void start() {
 		//Mouse.setGrabbed(true);
@@ -63,6 +93,7 @@ public class Runner
 		}
 		
 		initGL(); // init OpenGL
+		init();
 		getDelta(); // call once before loop to initialise lastFrame
 		lastFPS = getTime(); // call before loop to initialise fps timer
  
@@ -119,110 +150,306 @@ public class Runner
 		if (Display.isCloseRequested())
 			isCloseRequested = true;
 		
-		if (Keyboard.isKeyDown(Keyboard.KEY_I)) 
+				
+		switch (state)
 		{
-			player.pitch += player.rotspeed * delta;
-			if (player.pitch > Math.PI/2)
-				player.pitch = (float)Math.PI/2;
-		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_K)) 
-		{
-			player.pitch -= player.rotspeed * delta;
-			if (player.pitch < -Math.PI/2)
-				player.pitch = -(float)Math.PI/2;
-		}
-		
-		if (Keyboard.isKeyDown(Keyboard.KEY_J)) player.yaw += player.rotspeed * delta;
-		if (Keyboard.isKeyDown(Keyboard.KEY_L)) player.yaw -= player.rotspeed * delta;
-		
-		if (player.yaw < -Math.PI) player.yaw += 2*(float)Math.PI;
-		if (player.yaw > Math.PI) player.yaw -= 2*(float)Math.PI;
-		
-		/*
-			x' = x cos a cos b - y (cos a cos c sin b + sin a sin c) + z (cos a sin b sin c - cos c sin a)
-			y' = x sin b + y cos b cos c - z cos b sin c
-			z' = x cos b sin a + y (cos a sin c - cos c sin a sin b) + z (cos a cos c + sin a sin b sin c)
+			case IN_GAME:
+			{
 			
-			x' = cos a cos b
-			y' = sin b
-			z' = cos b sin a
-		 */
-		
-		if ( ( ( Keyboard.isKeyDown(Keyboard.KEY_A) || Keyboard.isKeyDown(Keyboard.KEY_D) ) ) 
-		  && ( ( Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_S) ) )
-		  && ( ( Keyboard.isKeyDown(Keyboard.KEY_Q) || Keyboard.isKeyDown(Keyboard.KEY_E) ) ) )
-			
-			player.movedamp = 1.0f/(float)Math.sqrt(3);
-		
-		else if ( ( (Keyboard.isKeyDown(Keyboard.KEY_A) || Keyboard.isKeyDown(Keyboard.KEY_D)) 
-		    && ( Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_S) ) )
-		  || ( ( Keyboard.isKeyDown(Keyboard.KEY_A) || Keyboard.isKeyDown(Keyboard.KEY_D) ) 
-		    && ( Keyboard.isKeyDown(Keyboard.KEY_Q) || Keyboard.isKeyDown(Keyboard.KEY_E) ) )
-		  || ( ( Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_S) ) 
-			&& ( Keyboard.isKeyDown(Keyboard.KEY_Q) || Keyboard.isKeyDown(Keyboard.KEY_E) ) ) )
-			
-			player.movedamp = 1.0f/(float)Math.sqrt(2);
-		
-		else 
-			player.movedamp = 1.0f/1.0f;
-		
-		//dampening: multiply by the dampening factor.
-		
-		if (Keyboard.isKeyDown(Keyboard.KEY_A)) 
-		{
-			player.pos.z += player.movedamp * player.speed * Math.sin( player.yaw ) * delta;
-			player.pos.x -= player.movedamp * player.speed * Math.cos( player.yaw ) * delta;
-		}
-		else if (Keyboard.isKeyDown(Keyboard.KEY_D)) 
-		{
-			player.pos.z -= player.movedamp * player.speed * delta * Math.sin( player.yaw );
-			player.pos.x += player.movedamp * player.speed * delta * Math.cos( player.yaw );
-		}
+				if(!onGround){
+					player.velocity -= player.gravity;
+					if(player.pos.y<2){
+						onGround = true;
+						player.velocity = 0;
+					}
+				}
+				else{
+					player.velocity = 0;
+				}
 
-		if (Keyboard.isKeyDown(Keyboard.KEY_W)) 
-		{
-			player.pos.x -= player.movedamp * player.speed * delta * Math.cos(player.pitch) * Math.sin(player.yaw);
-			player.pos.y += player.movedamp * player.speed * delta * Math.sin(player.pitch);
-			player.pos.z -= player.movedamp * player.speed * delta * Math.cos(player.pitch) * Math.cos(player.yaw);
-		}
-		else if (Keyboard.isKeyDown(Keyboard.KEY_S)) 
-		{
-			player.pos.x += player.movedamp * player.speed * delta * Math.cos(player.pitch) * Math.sin(player.yaw);
-			player.pos.y -= player.movedamp * player.speed * delta * Math.sin(player.pitch);
-			player.pos.z += player.movedamp * player.speed * delta * Math.cos(player.yaw) * Math.cos(player.pitch);
+				//Selse System.out.println("e is null");
+				
+				//player.yaw -= (player.rotspeed*delta)*Mouse.getDX()*.15;
+				//player.pitch += (player.rotspeed*delta)*Mouse.getDY()*.15;
+				
+				if (Keyboard.isKeyDown(Keyboard.KEY_I)) 
+				{
+					player.pitch += player.rotspeed * delta;
+					if (player.pitch > Math.PI/2)
+						player.pitch = (float)Math.PI/2;
+				}
+				if (Keyboard.isKeyDown(Keyboard.KEY_K)) 
+				{
+					player.pitch -= player.rotspeed * delta;
+					if (player.pitch < -Math.PI/2)
+						player.pitch = -(float)Math.PI/2;
+				}
+				
+				if (Keyboard.isKeyDown(Keyboard.KEY_J)) player.yaw += player.rotspeed * delta;
+				if (Keyboard.isKeyDown(Keyboard.KEY_L)) player.yaw -= player.rotspeed * delta;
+				
+				if (player.yaw < -Math.PI) player.yaw += 2*(float)Math.PI;
+				if (player.yaw > Math.PI) player.yaw -= 2*(float)Math.PI;
+				
+				//if (Keyboard.isKeyDown(Keyboard.KEY_U)) roll -= rotspeed * delta;
+				//if (Keyboard.isKeyDown(Keyboard.KEY_O)) roll += rotspeed * delta;
+		 
+				/*
+					x' = x cos a cos b - y (cos a cos c sin b + sin a sin c) + z (cos a sin b sin c - cos c sin a)
+					y' = x sin b + y cos b cos c - z cos b sin c
+					z' = x cos b sin a + y (cos a sin c - cos c sin a sin b) + z (cos a cos c + sin a sin b sin c)
+					
+					x' = cos a cos b
+					y' = sin b
+					z' = cos b sin a
+				 */
+				
+				if ( ( ( Keyboard.isKeyDown(Keyboard.KEY_A) || Keyboard.isKeyDown(Keyboard.KEY_D) ) ) 
+				  && ( ( Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_S) ) )
+				  && ( ( Keyboard.isKeyDown(Keyboard.KEY_Q) || Keyboard.isKeyDown(Keyboard.KEY_E) ) ) )
+					
+					player.movedamp = 1.0f/(float)Math.sqrt(3);
+				
+				else if ( ( (Keyboard.isKeyDown(Keyboard.KEY_A) || Keyboard.isKeyDown(Keyboard.KEY_D)) 
+				    && ( Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_S) ) )
+				  || ( ( Keyboard.isKeyDown(Keyboard.KEY_A) || Keyboard.isKeyDown(Keyboard.KEY_D) ) 
+				    && ( Keyboard.isKeyDown(Keyboard.KEY_Q) || Keyboard.isKeyDown(Keyboard.KEY_E) ) )
+				  || ( ( Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_S) ) 
+					&& ( Keyboard.isKeyDown(Keyboard.KEY_Q) || Keyboard.isKeyDown(Keyboard.KEY_E) ) ) )
+					
+					player.movedamp = 1.0f/(float)Math.sqrt(2);
+				
+				else 
+					player.movedamp = 1.0f/1.0f;
+				
+				//dampening: multiply by the dampening factor.
+				
+				if (Keyboard.isKeyDown(Keyboard.KEY_A)) 
+				{
+					//player.pos.z += player.movedamp * player.speed * Math.sin( player.yaw ) * delta;
+					//player.pos.x -= player.movedamp * player.speed * Math.cos( player.yaw ) * delta;
+					velZ += player.movedamp * player.speed * Math.sin( player.yaw ) * delta;
+					velX +=  -1 * player.movedamp * player.speed * Math.cos( player.yaw ) * delta;
+				}
+				else if (Keyboard.isKeyDown(Keyboard.KEY_D) ) 
+				{
+
+					velZ  += -1 * player.movedamp * player.speed * Math.sin( player.yaw ) * delta;
+					velX += player.movedamp * player.speed * Math.cos( player.yaw ) * delta;
+				}
+
+				if (Keyboard.isKeyDown(Keyboard.KEY_W)) 
+				{
+					
+					velX += -1 * player.movedamp * player.speed * Math.cos(player.pitch) * Math.sin(player.yaw) * delta;
+					velY +=  player.movedamp * player.speed * Math.sin(player.pitch) * delta;
+					velZ += -1 * player.movedamp * player.speed * Math.cos(player.pitch) * Math.cos(player.yaw) * delta;
+				}
+				else if (Keyboard.isKeyDown(Keyboard.KEY_S)) 
+				{
+					velX += player.movedamp * player.speed * Math.cos(player.pitch) * Math.sin(player.yaw) * delta;
+					velY += -1 * player.movedamp * player.speed * Math.sin(player.pitch) * delta;
+					velZ += player.movedamp * player.speed * Math.cos(player.pitch) * Math.cos(player.yaw) * delta;
+				}
+				
+				if (Keyboard.isKeyDown(Keyboard.KEY_SPACE))
+				{
+					if(onGround){
+						player.velocity = .1;
+						onGround = false;
+					}
+					
+				}
+				if(Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)){
+					player.pos.y += delta*player.speed;
+				}
+				else if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT))
+				{
+					velY += -1 * delta*player.speed;
+				}
+				
+				if (Keyboard.isKeyDown(Keyboard.KEY_Q))
+				{
+					velW += -1 * delta*player.speed;
+				}
+				if (Keyboard.isKeyDown(Keyboard.KEY_E))
+				{
+					velW += delta*player.speed;
+				}
+				
+				//W/S
+				//z -= speed * Math.cos( Math.toRadians(yaw) ) * delta;
+				//x -= speed * Math.sin( Math.toRadians(yaw) ) * delta;
+				//A/D
+				//x -= speed * Math.cos( Math.toRadians(yaw) ) * delta;
+				//z -= speed * Math.sin( Math.toRadians(yaw) ) * delta;
+				
+				
+				//if (Keyboard.isKeyDown(Keyboard.KEY_Q)) z += 0.05f * delta;
+				//if (Keyboard.isKeyDown(Keyboard.KEY_E)) z -= 0.05f * delta;
+		 
+				
+				while (Keyboard.next()) {
+				    if (Keyboard.getEventKeyState()) {
+				        if (Keyboard.getEventKey() == Keyboard.KEY_F) {
+				        	setDisplayMode(800, 600, !Display.isFullscreen());
+				        }
+				        else if (Keyboard.getEventKey() == Keyboard.KEY_V) {
+				        	vsync = !vsync;
+				        	Display.setVSyncEnabled(vsync);
+				        }
+				    }
+				}
+				
+				// keep quad on the screen
+				
+				//Checking for collisions.
+				
+				tempX = (short)((int)(player.pos.x%8));
+				tempY = (short)((int)(player.pos.y%8));
+				tempZ = (short)((int)(player.pos.z%8));
+				tempW = (short)((int)(player.pos.w%8));
+				
+				if( player.pos.z < 0 ) tempZ += 7;
+				if( player.pos.x < 0) tempX += 7;
+				if( player.pos.y < 0 ) tempY += 7;
+				if( player.pos.w < 0 ) tempW += 7;
+				
+				
+				
+				Chunk e = player.getChunk();
+				removeChunk = false;
+				if(e == null){
+					
+					player.cl.loaded.add(new Point4D(0,0,0,0));
+					temp2X = (short)((int)(player.pos.x)/8);
+					temp2Y = (short)((int)(player.pos.y)/8);
+					temp2Z = (short)((int)(player.pos.z)/8);
+					temp2W = (short)((int)(player.pos.w)/8);
+					
+					if(player.pos.x < 0) temp2X -=1;
+					if(player.pos.y < 0) temp2Y -=1;
+					if(player.pos.z < 0) temp2Z -=1;
+					if(player.pos.w < 0) temp2W -=1;
+					
+					e = new Chunk(world, (int)(temp2X), (int)(temp2Y), (int)(temp2Z), (int)(temp2W));
+					player.cl.world.loaded.add(e);
+					removeChunk = true;
+
+				}
+
+				if(e!=null){
+					//e.data[(int)(player.pos.x%8)][(int)(player.pos.y%8)][(int)(player.pos.z%8)][(int)(player.pos.w%8)] = new Block(e, (short)(512*((int)(player.pos.w%8))+64*((int)(player.pos.z%8))+8*((int)(player.pos.y%8))+((int)(player.pos.x%8))));
+					//playerBlock = e.data[(int)(player.pos.x%8)][(int)(player.pos.y%8)][(int)(player.pos.z%8)][(int)(player.pos.w%8)];
+					//playerBlock = e.data[(int)(player.pos.x%8)][(int)(player.pos.y%8)][(int)(player.pos.z%8)][(int)(player.pos.w%8)];
+					if(e.data[(int)tempX][(int)tempY][(int)tempZ][(int)tempW] == null){
+						e.data[(int)tempX][(int)tempY][(int)tempZ][(int)tempW] = new Block(e, (short)(512*((int)tempW)+64*((int)tempZ)+8*((int)tempY)+((int)tempX)));
+						removeBlock = true;
+					}
+					playerBlock = e.data[(int)tempX][(int)tempY][(int)tempZ][(int)tempW];
+					
+					//if(remove) player.cl.world.loaded.add(e);
+					if(playerBlock!=null){
+						playerBlock.checkSides();
+						if(((playerBlock.sides >> 3)&1) == 1){
+						//	System.out.println("On ground");
+							onGround = true;
+						}	
+						else{
+						//	System.out.println("Not");
+							onGround = false;
+						}	
+						
+						velY = player.velocity;
+						
+						if(!((playerBlock.sides & 1 ) ==1) && velX > 0)
+							canMoves+=1;
+						else if(!((playerBlock.sides >> 1 & 1 ) ==1) && velX < 0)
+							canMoves +=2;
+						if(!((playerBlock.sides >> 2 & 1 ) ==1) && velY > 0){
+							canMoves +=4;
+						}
+							
+						else if(!((playerBlock.sides >> 3 & 1 ) ==1) )
+							canMoves +=8;
+						if(!((playerBlock.sides >> 4 & 1 ) ==1) && velZ > 0)
+							canMoves +=16;
+						else if(!((playerBlock.sides >> 5 & 1 ) ==1) && velZ < 0)
+							canMoves += 32;
+						if(!((playerBlock.sides >> 6 & 1 ) ==1) && velW > 0)
+							canMoves += 64;
+						else if(!((playerBlock.sides >> 7 & 1 ) ==1) && velW < 0)
+							canMoves += 128;
+						
+						
+						if(removeBlock)e.data[(int)tempX][(int)tempY][(int)tempZ][(int)tempW] = null;
+						if(removeChunk) player.cl.world.loaded.remove(e);
+						e = null;
+					
+						
+						if((canMoves & 1) == 1 || (canMoves >> 1 & 1) == 1){
+						//	System.out.println("can x");
+							player.pos.x += velX;
+						}
+						if((canMoves >> 2 & 1 ) == 1 || (canMoves >> 3 & 1) == 1){
+						//	System.out.print("Can y");
+							player.pos.y += velY;
+						}
+						else{
+						//	System.out.println("can moves: "+canMoves);
+						}
+						if((canMoves >> 4 & 1 ) == 1 || (canMoves >> 5 & 1) == 1){
+						//	System.out.println("can z");
+							player.pos.z += velZ;
+						}
+						if((canMoves >> 6 & 1) == 1 || (canMoves >> 7 & 1) == 1){
+						//	System.out.println("can w");
+							player.pos.w += velW;
+						}
+						
+						velX = 0; velY = 0; velZ = 0; velW = 0;
+						canMoves = 0;
+					}
+				}
+			/*	else{
+					//System.out.println("e = null");
+					velY = player.velocity;
+					//onGround = false;
+			//		player.velocity = .1;
+					player.pos.x += velX;
+					player.pos.y += velY;
+					player.pos.z += velZ;
+					player.pos.w += velW;
+					velX = 0; velY = 0; velZ = 0; velW = 0;	
+				} */
+				break;
+			}
+			case PAUSED:
+			{
+				
+				break;
+			}
+			case MAIN_MENU:
+			{
+				break;
+			}
+			
 		}
 		
-		if (Keyboard.isKeyDown(Keyboard.KEY_SPACE))
-		{
-			player.pos.y += delta*player.speed;
-		}
-		else if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT))
-		{
-			player.pos.y -= delta*player.speed;
-		}
 		
-		if (Keyboard.isKeyDown(Keyboard.KEY_Q))
+		if (Keyboard.isKeyDown(Keyboard.KEY_ESCAPE) && !switched)
 		{
-			player.pos.w -= delta*player.speed;
+			switched = true;
+			if (state.equals(GameState.IN_GAME))
+				state = GameState.PAUSED;
+			else if (state.equals(GameState.PAUSED))
+				state = GameState.IN_GAME;
+			//System.out.println(state);
+			
 		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_E))
-		{
-			player.pos.w += delta*player.speed;
+		if(!Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)){
+			switched = false;
 		}
-		
-		while (Keyboard.next()) {
-		    if (Keyboard.getEventKeyState()) {
-		        if (Keyboard.getEventKey() == Keyboard.KEY_F) {
-		        	setDisplayMode(800, 600, !Display.isFullscreen());
-		        }
-		        else if (Keyboard.getEventKey() == Keyboard.KEY_V) {
-		        	vsync = !vsync;
-		        	Display.setVSyncEnabled(vsync);
-		        }
-		    }
-		}
-		
-		// keep quad on the screen
  
 		updateFPS(); // update FPS Counter
 	}
@@ -323,6 +550,12 @@ public class Runner
 		fps++;
 	}
  
+	public void init()
+	{
+		Font awtFont = new Font("Times New Roman", Font.BOLD, 16);
+		font = new TrueTypeFont(awtFont, false);
+	}
+
 	public void initGL() 
 	{
 		GL11.glMatrixMode(GL11.GL_PROJECTION);
@@ -391,6 +624,44 @@ public class Runner
 		}
 		
 		GL11.glTranslatef((float)player.pos.x, (float)player.pos.y, (float)player.pos.z);
+
+		drawDebug();
+	}
+
+	public void drawDebug()
+	{
+		//For some reason this draws text
+			GL11.glEnable(GL11.GL_TEXTURE_2D);
+			GL11.glShadeModel(GL11.GL_SMOOTH);        
+			GL11.glDisable(GL11.GL_DEPTH_TEST);
+			GL11.glDisable(GL11.GL_LIGHTING);                    
+		 
+			GL11.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);                
+		    GL11.glClearDepth(1);                                       
+		
+	        GL11.glEnable(GL11.GL_BLEND);
+		    GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+		 
+	        GL11.glViewport(0,0,800,600);
+			GL11.glMatrixMode(GL11.GL_MODELVIEW);
+		 
+			GL11.glMatrixMode(GL11.GL_PROJECTION);
+			GL11.glLoadIdentity();
+			GL11.glOrtho(0, 800, 600, 0, 1, -1);
+			GL11.glMatrixMode(GL11.GL_MODELVIEW);
+			GL11.glLoadIdentity();
+				
+			font.drawString(10, 10, "W: " + round(3,player.pos.w) );
+			font.drawString(10, 28, "X: " + round(3,player.pos.x) );
+			font.drawString(10, 46, "Y: " + round(3,player.pos.y) );
+			font.drawString(10, 64, "Z: " + round(3,player.pos.z) );
+			font.drawString(100, 10, "YAW: " + round(3,player.yaw));
+			font.drawString(100, 28, "PITCH: " + round(3,player.pitch));
+			font.drawString(100, 46, "ROLL: " + round(3,player.roll));
+			font.drawString(100, 64, "WANE: " + round(3,player.wane));
+				
+			initGL();
+			GL11.glDisable(GL11.GL_TEXTURE_2D);
 	}
 	
 	float prevalpha = 1.0f;
@@ -481,5 +752,11 @@ public class Runner
 	public static void main(String[] argv) {
 		Runner runner = new Runner();
 		runner.start();
+	}
+
+	public double round (int decPlaces, double num)
+	{
+		int temp = (int)(num*Math.pow(10,decPlaces));
+		return (double)(temp/Math.pow(10,decPlaces));
 	}
 }
