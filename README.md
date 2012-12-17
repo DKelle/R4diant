@@ -12,21 +12,24 @@ Updates:
 
 Version 0.18:
 
--Small errors fixed. Rendering and sorting partially optimized.
+-Gravity, game states, text drawing, and some rendering errors fixed. More efficiency.
 
 -Content:
---Block - Small details changed
---Chunk - Comparisons cleaned. BlockSide moved to World. (Could be a separate class..?)
---ChunkLoader - A small land function that will be overwritten by Ian's code
---World - Most rendering stuff here. Sides are analyzed to decrease the size of the array and speed up render time.
----BlockSide - A simple class for the sides of blocks to render with a sort compared to the player and his point of view. Needs images.
---Runner - Smooth render function. Note: mouse stuff commented until stable
---Player - IsInView(Chunk) designed a bit better
+--Block - ?
+--Point4D - sorting based on w, then z, then y, then x.
+--Chunk - BlockSides moved to world.
+--ChunkLoader - A small random terrain function.
+--Player - Some gravity stuff added, and isInView updated.
+--World - Render preparation now removes sides that are out of view.
+---BlockSide - A simple class for the sides of blocks to render with a sort compared to 
+
+the player and his point of view. Needs images.
+--Runner - Game states, gravity and velocity, and text are now working.
 
 -Problems:
---I think the w faces can still overlap occasionally.
---Need to add sides in sorted position, so a binary search for them will change the speed from O(n^3) to O(n^2).
---Need to remove more sides based on their position relative to the player than is currently happening. Be careful.
+--A bit of transparency rendering errors left
+--Collision can be better
+--Framerate is very low, usually
 
 
 Version 0.1732:
