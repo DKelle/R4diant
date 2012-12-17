@@ -1,5 +1,9 @@
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 
 
 public class World 
@@ -21,8 +25,20 @@ public class World
 		sides = new ArrayList<BlockSide>(); 
 	}
 	
+	Point4D prevdir = new Point4D(0,0,0,0);
+	Point4D currdir = new Point4D(0,0,0,0);
+	
+	Point4D prevpos = new Point4D(0,0,0,0);
+	Point4D currpos = new Point4D(0,0,0,0);
+	
 	public void prepareRender()
 	{
+		currdir = new Point4D(player.yaw, player.pitch, player.roll, player.wane);
+		currpos = new Point4D(player.pos.x, player.pos.y, player.pos.z, player.pos.w);
+		
+		if (currdir.compareTo(prevdir) == 0 && currpos.compareTo(prevpos) == 0)
+			return;
+		
 		//Collections.sort(loaded);
 		for (Chunk c : loaded)
 		{
@@ -42,6 +58,9 @@ public class World
 		parent.curr = System.currentTimeMillis();
 		//System.out.println("sort "+(parent.curr-parent.last));
 		parent.last = parent.curr;
+		
+		prevdir = currdir;
+		prevpos = currpos;
 	}
 	
 	public Chunk getChunk(int x, int y, int z, int w)
@@ -56,6 +75,51 @@ public class World
 		return null;
 	}
 	
+	//This function might not be used
+	public Byte[] getSideOrder()
+	{
+		//create a linear interpolation of the user's current direction
+		//let it collide with the 1x1x1 box of the player
+		//at that collision point, find the order of the sides, closest to farthest
+		//this gives the list of sides that are farthest to closest.
+		
+		Point4D test = new Point4D(-Math.cos(player.pitch) * Math.sin(player.yaw), Math.sin(player.pitch), -Math.cos(player.pitch) * Math.cos(player.yaw), 0);
+		
+		Map<Byte, Double> a = new HashMap<Byte, Double>();
+		a.put(new Byte((byte)0), test.dist(new Point4D(1,0,0,0)));
+		a.put(new Byte((byte)1), test.dist(new Point4D(-1,0,0,0)));
+		a.put(new Byte((byte)2), test.dist(new Point4D(0,1,0,0)));
+		a.put(new Byte((byte)3), test.dist(new Point4D(0,-1,0,0)));
+		a.put(new Byte((byte)4), test.dist(new Point4D(0,0,1,0)));
+		a.put(new Byte((byte)5), test.dist(new Point4D(0,0,-1,0)));
+		
+		class DoubleComparator implements Comparator<Byte>
+		{
+			Map<Byte, Double> base;
+			public DoubleComparator(Map<Byte, Double> base) {
+				this.base = base;
+			}
+		
+			// Note: this comparator imposes orderings that are inconsistent with equals.
+			public int compare(Byte a, Byte b) {
+				if (base.get(a) >= base.get(b)) {
+					return 1;
+				} else {
+					return -1;
+				} // returning 0 would merge keys
+			//Note that this will create a reverse ordering because the farthest objects must be rendered first for blending to work
+			}
+		}
+		
+        DoubleComparator comp = new DoubleComparator(a);
+        TreeMap<Byte,Double> sorted = new TreeMap<Byte,Double>(comp);
+        sorted.putAll(a);
+        
+        Byte[] res = new Byte[6];
+        sorted.keySet().toArray(res);
+        return res;
+	}
+	
 	//takes the existing arraylist and converts it to the sides arraylist, trimming as it goes
 	public void trimSides()
 	{
@@ -66,18 +130,38 @@ public class World
 			
 			sides = new ArrayList<BlockSide>(); 
 			
+			//if side order stuff is on
+			//Byte[] order = getSideOrder();
+			//int rem1 = order[0];
+			//int rem2 = order[1];
+			//int rem3 = order[2];
+			
+			
 			for (BlockSide e : existing)
-			{
+			{	
 				double a = -Math.cos(player.pitch)*Math.sin(player.yaw)*(e.parent.getPosition().add(e.getOffset(false)).x - player.pos.x) 
 						+ Math.sin(player.pitch)*(e.parent.getPosition().add(e.getOffset(false)).y - player.pos.y) 
 						- Math.cos(player.pitch)*Math.cos(player.yaw)*(e.parent.getPosition().add(e.getOffset(false)).z - player.pos.z);
 				double b = parent.alphaFunction(e.parent.getPosition());
+				double c = Math.sqrt( Math.pow( new Point4D(player.pos.x, player.pos.y, player.pos.z, 0).dist(e.parent.getPosition().add(e.getOffset(false))), 2) - a*a);
 				
+				double minimumoffset = -1;
 				double renderdist = 50;
-				if (a < 0 || a > renderdist || b == 0)
+				if (a < minimumoffset || a > renderdist || b == 0)
 					continue;
 				
+				//The other side of the triangle that is in the direction of the player is:
+				//sqrt( (distance to block)^2 - (distance along view)^2 )
+				//let y be this value, and x be a
+				// y > slope|x-offset|
 				
+				double slope = 2;
+				if (c > slope*Math.abs(a-minimumoffset))
+					continue;
+				
+				//If side order stuff is on
+				//if (b > 0 && ( e.value == rem1 || e.value == rem2 ||e.value == rem3 ) )
+				//	continue;
 				
 				//find matching id using binary search
 				//binary search (logarithmic time)
