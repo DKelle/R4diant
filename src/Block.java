@@ -291,4 +291,24 @@ public class Block implements Comparable
 		return getPosition().dist(chunk.world.player.pos);
 	}
 	
+	public float[] getTextureCoordinates(byte side)
+	{
+		if (side >= 0 && side <= 5)
+		{
+			//potentially things for different sides go here
+			//assuming for now that the texture map is 16x16 ******
+			
+			float[] res = new float[8];
+			res[0] = (id%16)/16.0f;
+			res[1] = (id/16)/16.0f;
+			res[2] = (id%16)/16.0f;
+			res[3] = ((id/16) + 1)/16.0f;
+			res[4] = ((id%16) + 1)/16.0f;
+			res[5] = ((id/16) + 1)/16.0f;
+			res[6] = ((id%16) + 1)/16.0f;
+			res[7] = (id/16)/16.0f;
+			return res;
+		}
+		return null;
+	}
 }

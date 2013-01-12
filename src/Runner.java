@@ -4,6 +4,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
@@ -33,6 +34,9 @@ import org.lwjgl.opengl.GLContext;
 import org.lwjgl.util.glu.GLU;
 
 import org.newdawn.slick.TrueTypeFont;
+import org.newdawn.slick.opengl.Texture;
+import org.newdawn.slick.opengl.TextureLoader;
+import org.newdawn.slick.util.ResourceLoader;
  
 public class Runner 
 {
@@ -41,6 +45,7 @@ public class Runner
 	//a list of blocks to use / world reference
 	World world;
 	Player player;
+	Texture terrain;
  
 	/** time at last frame */
 	long lastFrame;
@@ -575,15 +580,24 @@ public class Runner
 	{
 		GL11.glMatrixMode(GL11.GL_PROJECTION);
 		GL11.glLoadIdentity();
-		//GL11.glOrtho(-4, 4, -3, 3, 0.1, 100);
-		//GL11.glFrustum(-1.0, 1.0, -1.0, 1.0, 1, 100);
 		GLU.gluPerspective(45.0f, 4/3.0f, 0.1f, 1000);
 		GL11.glMatrixMode(GL11.GL_MODELVIEW);
 		GL11.glLoadIdentity();
 		
 		GL11.glEnableClientState(GL11.GL_VERTEX_ARRAY);
-	    //GL11.glEnableClientState(GL11.GL_NORMAL_ARRAY);
-	    GL11.glEnableClientState(GL11.GL_COLOR_ARRAY);
+		GL11.glEnableClientState(GL11.GL_COLOR_ARRAY);
+		GL11.glEnableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
+		
+		GL11.glEnable(GL11.GL_TEXTURE_2D);
+		try 
+		{
+			terrain = TextureLoader.getTexture("PNG", ResourceLoader.getResourceAsStream("res/texture.png"));
+		} 
+		catch (IOException e) 
+		{
+			e.printStackTrace();
+		}
+		terrain.bind();
 		
 		GL11.glEnable(GL11.GL_BLEND); 
 		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
@@ -633,16 +647,16 @@ public class Runner
 	public void drawDebug()
 	{
 		//For some reason this draws text
-			GL11.glEnable(GL11.GL_TEXTURE_2D);
-			GL11.glShadeModel(GL11.GL_SMOOTH);        
+			//GL11.glEnable(GL11.GL_TEXTURE_2D);
+			//GL11.glShadeModel(GL11.GL_SMOOTH);        
 			GL11.glDisable(GL11.GL_DEPTH_TEST);
 			GL11.glDisable(GL11.GL_LIGHTING);                    
 		 
 			GL11.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);                
 		    GL11.glClearDepth(1);                                       
 		
-	        GL11.glEnable(GL11.GL_BLEND);
-		    GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+	        //GL11.glEnable(GL11.GL_BLEND);
+		    //GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 		 
 	        GL11.glViewport(0,0,800,600);
 			GL11.glMatrixMode(GL11.GL_MODELVIEW);
@@ -662,8 +676,19 @@ public class Runner
 			font.drawString(100, 46, "ROLL: " + round(3,player.roll));
 			font.drawString(100, 64, "WANE: " + round(3,player.wane));
 				
-			initGL();
-			GL11.glDisable(GL11.GL_TEXTURE_2D);
+			//GL11.glDisable(GL11.GL_TEXTURE_2D);
+			
+			GL11.glMatrixMode(GL11.GL_PROJECTION);
+			GL11.glLoadIdentity();
+			GLU.gluPerspective(45.0f, 4/3.0f, 0.1f, 1000);
+			GL11.glMatrixMode(GL11.GL_MODELVIEW);
+			GL11.glLoadIdentity();
+			
+			GL11.glEnable(GL11.GL_DEPTH_TEST);
+			GL11.glDepthFunc(GL11.GL_LEQUAL);
+			GL11.glHint(GL11.GL_PERSPECTIVE_CORRECTION_HINT, GL11.GL_NICEST);
+			
+			//initGL(); //DO NOT CALL THIS!
 	}
 	
 	float prevalpha = 1.0f;
@@ -676,7 +701,7 @@ public class Runner
 			GL15.glGenBuffers(buffer);
 			int vertex_buffer_id = buffer.get(0);
 			
-			FloatBuffer vertexdata = BufferUtils.createFloatBuffer(world.sides.size()*4*7); //xyzrgba
+			FloatBuffer vertexdata = BufferUtils.createFloatBuffer(world.sides.size()*4*9); //xyz rgba uv
 			
 			for (BlockSide e : world.sides)
 			{
@@ -685,21 +710,30 @@ public class Runner
 			
 			vertexdata.rewind();
 			GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vertex_buffer_id);
-		    GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertexdata, GL15.GL_DYNAMIC_DRAW);
+			GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertexdata, GL15.GL_DYNAMIC_DRAW);
 		    
-		    GL11.glVertexPointer(3, GL11.GL_FLOAT, 28, 0);
-		    //GL11.glNormalPointer(GL11.GL_FLOAT, 0, 0);
-		    GL11.glColorPointer(4, GL11.GL_FLOAT, 28, 12);
-
+			//current size: 3 + 4 + 2 = 9
+			
+			GL11.glVertexPointer(3, GL11.GL_FLOAT, 36, 0);
+			GL11.glColorPointer(4, GL11.GL_FLOAT, 36, 12);
+			GL11.glTexCoordPointer(2, GL11.GL_FLOAT, 36, 28);
+			
+		    org.newdawn.slick.Color.white.bind();
+		    terrain.bind();
+		    
 		    GL11.glDrawArrays(GL11.GL_QUADS, 0, world.sides.size()*4);
 		}
-	}	
+	}
 	
+	//CUSTOM COLORS *******
+	/*
 	public void loadDataFromBlockFace(BlockSide side, FloatBuffer list)
 	{
 		//loads data about the face into the buffer arrays
 		Point4D p = side.parent.getPosition();
 		float alpha = alphaFunction(p);
+		
+		float[] tc = side.parent.getTextureCoordinates(side.value);
 		
 		if (side.value == 2)
 		{
@@ -707,10 +741,15 @@ public class Runner
 			list.put(new Float(p.y+1));
 			list.put(new Float(p.z));
 			
+			//normal here (x, y, z)
+			
 			list.put(new Float(1));
 			list.put(new Float(0.5));
 			list.put(new Float(0.5));
 			list.put(new Float(alpha));
+			
+			list.put(tc[0]);
+			list.put(tc[1]);
 			
 			
 			list.put(new Float(p.x));
@@ -722,6 +761,9 @@ public class Runner
 			list.put(new Float(0.5));
 			list.put(new Float(alpha));
 			
+			list.put(tc[2]);
+			list.put(tc[3]);
+			
 			
 			list.put(new Float(p.x));
 			list.put(new Float(p.y+1));
@@ -732,6 +774,9 @@ public class Runner
 			list.put(new Float(0.5));
 			list.put(new Float(alpha));
 			
+			list.put(tc[4]);
+			list.put(tc[5]);
+			
 			
 			list.put(new Float(p.x+1));
 			list.put(new Float(p.y+1));
@@ -741,6 +786,9 @@ public class Runner
 			list.put(new Float(0.5));
 			list.put(new Float(0.5));
 			list.put(new Float(alpha));
+			
+			list.put(tc[6]);
+			list.put(tc[7]);
 		}
 		
 		if (side.value == 3)
@@ -754,6 +802,9 @@ public class Runner
 			list.put(new Float(0.5));
 			list.put(new Float(alpha));
 			
+			list.put(tc[0]);
+			list.put(tc[1]);
+			
 			
 			list.put(new Float(p.x));
 			list.put(new Float(p.y));
@@ -764,6 +815,9 @@ public class Runner
 			list.put(new Float(0.5));
 			list.put(new Float(alpha));
 			
+			list.put(tc[2]);
+			list.put(tc[3]);
+			
 			
 			list.put(new Float(p.x));
 			list.put(new Float(p.y));
@@ -774,6 +828,9 @@ public class Runner
 			list.put(new Float(0.5));
 			list.put(new Float(alpha));
 			
+			list.put(tc[4]);
+			list.put(tc[5]);
+			
 			
 			list.put(new Float(p.x+1));
 			list.put(new Float(p.y));
@@ -783,6 +840,9 @@ public class Runner
 			list.put(new Float(1));
 			list.put(new Float(0.5));
 			list.put(new Float(alpha));
+			
+			list.put(tc[6]);
+			list.put(tc[7]);
 		}
 		
 		if (side.value == 4)
@@ -796,6 +856,9 @@ public class Runner
 			list.put(new Float(0.5));
 			list.put(new Float(alpha));
 			
+			list.put(tc[0]);
+			list.put(tc[1]);
+			
 			
 			list.put(new Float(p.x));
 			list.put(new Float(p.y+1));
@@ -806,6 +869,9 @@ public class Runner
 			list.put(new Float(0.5));
 			list.put(new Float(alpha));
 			
+			list.put(tc[2]);
+			list.put(tc[3]);
+			
 			
 			list.put(new Float(p.x));
 			list.put(new Float(p.y));
@@ -816,6 +882,9 @@ public class Runner
 			list.put(new Float(0.5));
 			list.put(new Float(alpha));
 			
+			list.put(tc[4]);
+			list.put(tc[5]);
+			
 			
 			list.put(new Float(p.x+1));
 			list.put(new Float(p.y));
@@ -825,6 +894,9 @@ public class Runner
 			list.put(new Float(1));
 			list.put(new Float(0.5));
 			list.put(new Float(alpha));
+			
+			list.put(tc[6]);
+			list.put(tc[7]);
 		}
 		
 		if (side.value == 5)
@@ -838,6 +910,9 @@ public class Runner
 			list.put(new Float(1));
 			list.put(new Float(alpha));
 			
+			list.put(tc[0]);
+			list.put(tc[1]);
+			
 			
 			list.put(new Float(p.x));
 			list.put(new Float(p.y));
@@ -848,6 +923,9 @@ public class Runner
 			list.put(new Float(1));
 			list.put(new Float(alpha));
 			
+			list.put(tc[2]);
+			list.put(tc[3]);
+			
 			
 			list.put(new Float(p.x));
 			list.put(new Float(p.y+1));
@@ -858,6 +936,8 @@ public class Runner
 			list.put(new Float(1));
 			list.put(new Float(alpha));
 			
+			list.put(tc[4]);
+			list.put(tc[5]);
 			
 			
 			list.put(new Float(p.x+1));
@@ -868,6 +948,9 @@ public class Runner
 			list.put(new Float(1));
 			list.put(new Float(1));
 			list.put(new Float(alpha));
+			
+			list.put(tc[6]);
+			list.put(tc[7]);
 		}
 		
 		if (side.value == 1)
@@ -881,6 +964,9 @@ public class Runner
 			list.put(new Float(1));
 			list.put(new Float(alpha));
 			
+			list.put(tc[0]);
+			list.put(tc[1]);
+			
 			
 			list.put(new Float(p.x));
 			list.put(new Float(p.y+1));
@@ -891,6 +977,9 @@ public class Runner
 			list.put(new Float(1));
 			list.put(new Float(alpha));
 			
+			list.put(tc[2]);
+			list.put(tc[3]);
+			
 			
 			list.put(new Float(p.x));
 			list.put(new Float(p.y));
@@ -901,6 +990,9 @@ public class Runner
 			list.put(new Float(1));
 			list.put(new Float(alpha));
 			
+			list.put(tc[4]);
+			list.put(tc[5]);
+			
 			
 			list.put(new Float(p.x));
 			list.put(new Float(p.y));
@@ -910,6 +1002,9 @@ public class Runner
 			list.put(new Float(0.5));
 			list.put(new Float(1));
 			list.put(new Float(alpha));
+			
+			list.put(tc[6]);
+			list.put(tc[7]);
 		}
 		
 		if (side.value == 0)
@@ -923,6 +1018,9 @@ public class Runner
 			list.put(new Float(1));
 			list.put(new Float(alpha));
 			
+			list.put(tc[0]);
+			list.put(tc[1]);
+			
 			
 			list.put(new Float(p.x+1));
 			list.put(new Float(p.y+1));
@@ -933,6 +1031,9 @@ public class Runner
 			list.put(new Float(1));
 			list.put(new Float(alpha));
 			
+			list.put(tc[2]);
+			list.put(tc[3]);
+			
 			
 			list.put(new Float(p.x+1));
 			list.put(new Float(p.y));
@@ -943,6 +1044,9 @@ public class Runner
 			list.put(new Float(1));
 			list.put(new Float(alpha));
 			
+			list.put(tc[4]);
+			list.put(tc[5]);
+			
 			
 			list.put(new Float(p.x+1));
 			list.put(new Float(p.y));
@@ -952,6 +1056,346 @@ public class Runner
 			list.put(new Float(0.5));
 			list.put(new Float(1));
 			list.put(new Float(alpha));
+			
+			list.put(tc[6]);
+			list.put(tc[7]);
+		}
+	}
+	*/
+	
+	//ALL WHITE ***** (textures actually look correct)
+	public void loadDataFromBlockFace(BlockSide side, FloatBuffer list)
+	{
+		//loads data about the face into the buffer arrays
+		Point4D p = side.parent.getPosition();
+		float alpha = alphaFunction(p);
+		
+		float[] tc = side.parent.getTextureCoordinates(side.value);
+		
+		if (side.value == 2)
+		{
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z));
+			
+			//normal here (x, y, z)
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[0]);
+			list.put(tc[1]);
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[2]);
+			list.put(tc[3]);
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[4]);
+			list.put(tc[5]);
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[6]);
+			list.put(tc[7]);
+		}
+		
+		if (side.value == 3)
+		{
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[0]);
+			list.put(tc[1]);
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[2]);
+			list.put(tc[3]);
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[4]);
+			list.put(tc[5]);
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[6]);
+			list.put(tc[7]);
+		}
+		
+		if (side.value == 4)
+		{
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[0]);
+			list.put(tc[1]);
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[2]);
+			list.put(tc[3]);
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[4]);
+			list.put(tc[5]);
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[6]);
+			list.put(tc[7]);
+		}
+		
+		if (side.value == 5)
+		{
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[0]);
+			list.put(tc[1]);
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[2]);
+			list.put(tc[3]);
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[4]);
+			list.put(tc[5]);
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[6]);
+			list.put(tc[7]);
+		}
+		
+		if (side.value == 1)
+		{
+			list.put(new Float(p.x));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[0]);
+			list.put(tc[1]);
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[2]);
+			list.put(tc[3]);
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[4]);
+			list.put(tc[5]);
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[6]);
+			list.put(tc[7]);
+		}
+		
+		if (side.value == 0)
+		{
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[0]);
+			list.put(tc[1]);
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[2]);
+			list.put(tc[3]);
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[4]);
+			list.put(tc[5]);
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			list.put(tc[6]);
+			list.put(tc[7]);
 		}
 	}
 	
