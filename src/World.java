@@ -14,6 +14,8 @@ public class World
 	Player player;
 	ArrayList<BlockSide> existing; //a list of the sides that exist!
 	ArrayList<BlockSide> sides; //a list of the sides to render!
+	boolean removeBackFaces = false; //this doesn't belong here, but temporarily. Also it doesn't work.
+	//boolean removeTransparentBackFaces = true;
 	
 	public World(Runner r)
 	{
@@ -131,10 +133,16 @@ public class World
 			sides = new ArrayList<BlockSide>(); 
 			
 			//if side order stuff is on
-			//Byte[] order = getSideOrder();
-			//int rem1 = order[0];
-			//int rem2 = order[1];
-			//int rem3 = order[2];
+			Byte[] order;
+			int rem1 = 0, rem2 = 0, rem3 = 0;
+			if (removeBackFaces)
+			{
+				order = getSideOrder();
+				rem1 = order[0];
+				rem2 = order[1];
+				rem3 = order[2];
+			}
+			
 			
 			
 			for (BlockSide e : existing)
@@ -160,7 +168,10 @@ public class World
 					continue;
 				
 				//If side order stuff is on
-				//if (b > 0 && ( e.value == rem1 || e.value == rem2 ||e.value == rem3 ) )
+				if (removeBackFaces && b > 0.75 && ( e.value == rem1 || e.value == rem2 ||e.value == rem3 ) )
+					continue;
+				
+				//if (removeTransparentBackFaces && ( e.value == rem1 || e.value == rem2 ||e.value == rem3 ) )
 				//	continue;
 				
 				//find matching id using binary search
