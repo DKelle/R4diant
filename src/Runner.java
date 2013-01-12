@@ -4,18 +4,32 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 
 import javax.swing.JFrame;
 
+import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.ARBVertexBufferObject;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
+import org.lwjgl.opengl.GL14;
+import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL21;
+import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL33;
+import org.lwjgl.opengl.GL41;
+import org.lwjgl.opengl.GL42;
+import org.lwjgl.opengl.GLContext;
 import org.lwjgl.util.glu.GLU;
 
 import org.newdawn.slick.TrueTypeFont;
@@ -155,7 +169,8 @@ public class Runner
 		{
 			case IN_GAME:
 			{
-			
+				world.cl.checkStatus();
+				
 				if(!onGround){
 					player.velocity -= player.gravity;
 					if(player.pos.y<2){
@@ -167,7 +182,7 @@ public class Runner
 					player.velocity = 0;
 				}
 
-				//Selse System.out.println("e is null");
+				//else System.out.println("e is null");
 				
 				//player.yaw -= (player.rotspeed*delta)*Mouse.getDX()*.15;
 				//player.pitch += (player.rotspeed*delta)*Mouse.getDY()*.15;
@@ -566,6 +581,10 @@ public class Runner
 		GL11.glMatrixMode(GL11.GL_MODELVIEW);
 		GL11.glLoadIdentity();
 		
+		GL11.glEnableClientState(GL11.GL_VERTEX_ARRAY);
+	    //GL11.glEnableClientState(GL11.GL_NORMAL_ARRAY);
+	    GL11.glEnableClientState(GL11.GL_COLOR_ARRAY);
+		
 		GL11.glEnable(GL11.GL_BLEND); 
 		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 		
@@ -604,24 +623,7 @@ public class Runner
 		GL11.glRotatef(-(float)Math.toDegrees(player.yaw), 0, 1, 0);
 		GL11.glTranslatef(-(float)player.pos.x, -(float)player.pos.y, -(float)player.pos.z);
 		
-		if (world.sides != null && world.sides.size() > 0)
-		{	
-			//for (int i = 0; i < world.sides.size(); i++)
-			//{
-			//	System.out.print(world.sides.get(i).value);
-			//}
-			//System.out.println();
-			
-			for (BlockSide e : world.sides)
-			{
-				renderBlockFace(e);
-			}
-			
-			curr = System.currentTimeMillis();
-			//System.out.println("rend "+(curr-last));
-			last = curr;
-			
-		}
+		vertexBufferShit();
 		
 		GL11.glTranslatef((float)player.pos.x, (float)player.pos.y, (float)player.pos.z);
 
@@ -665,6 +667,293 @@ public class Runner
 	}
 	
 	float prevalpha = 1.0f;
+	
+	public void vertexBufferShit()
+	{
+		if (world.sides != null && world.sides.size() > 0)
+		{	
+			IntBuffer buffer = BufferUtils.createIntBuffer(1);
+			GL15.glGenBuffers(buffer);
+			int vertex_buffer_id = buffer.get(0);
+			
+			FloatBuffer vertexdata = BufferUtils.createFloatBuffer(world.sides.size()*4*7); //xyzrgba
+			
+			for (BlockSide e : world.sides)
+			{
+				loadDataFromBlockFace(e, vertexdata);
+			}
+			
+			vertexdata.rewind();
+			GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vertex_buffer_id);
+		    GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertexdata, GL15.GL_DYNAMIC_DRAW);
+		    
+		    GL11.glVertexPointer(3, GL11.GL_FLOAT, 28, 0);
+		    //GL11.glNormalPointer(GL11.GL_FLOAT, 0, 0);
+		    GL11.glColorPointer(4, GL11.GL_FLOAT, 28, 12);
+
+		    GL11.glDrawArrays(GL11.GL_QUADS, 0, world.sides.size()*4);
+		}
+	}	
+	
+	public void loadDataFromBlockFace(BlockSide side, FloatBuffer list)
+	{
+		//loads data about the face into the buffer arrays
+		Point4D p = side.parent.getPosition();
+		float alpha = alphaFunction(p);
+		
+		if (side.value == 2)
+		{
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(0.5));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(0.5));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(0.5));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(0.5));
+			list.put(new Float(alpha));
+		}
+		
+		if (side.value == 3)
+		{
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(alpha));
+		}
+		
+		if (side.value == 4)
+		{
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(alpha));
+		}
+		
+		if (side.value == 5)
+		{
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+		}
+		
+		if (side.value == 1)
+		{
+			list.put(new Float(p.x));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(0.5));
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(0.5));
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(0.5));
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(0.5));
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+		}
+		
+		if (side.value == 0)
+		{
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y+1));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z+1));
+			
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+			
+			
+			list.put(new Float(p.x+1));
+			list.put(new Float(p.y));
+			list.put(new Float(p.z));
+			
+			list.put(new Float(1));
+			list.put(new Float(0.5));
+			list.put(new Float(1));
+			list.put(new Float(alpha));
+		}
+	}
 	
 	public float alphaFunction(Point4D p)
 	{
@@ -754,7 +1043,7 @@ public class Runner
 		runner.start();
 	}
 
-	public double round (int decPlaces, double num)
+	public double round(int decPlaces, double num)
 	{
 		int temp = (int)(num*Math.pow(10,decPlaces));
 		return (double)(temp/Math.pow(10,decPlaces));

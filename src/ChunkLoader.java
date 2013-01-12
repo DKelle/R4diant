@@ -31,7 +31,7 @@ public class ChunkLoader
 		//Eh, we need a function to look up a block type by ID. Hmm.
 		
 		//Easy way:
-		genChunks(1,1,1,1,3122);
+		//genChunks(1,1,1,1,122);
 		
 		/* Not sure:
 		for (int i = 0; i < 2; i++)
@@ -49,11 +49,15 @@ public class ChunkLoader
 		}
 		*/
 		
-		/* Simple debugger:
+		///* Simple debugger:
 		loaded.add(new Point4D(0,0,0,0));
 		Chunk c = new Chunk(world, 0,0,0,0);
 		c.data[0][0][0][0] = new Block(c, (short)0_0000);
-		c.data[1][0][0][1] = new Block(c, (short)0_1001);
+		//c.data[1][0][0][0] = new Block(c, (short)0_0001);
+		//c.data[0][1][0][0] = new Block(c, (short)0_0010);
+		//c.data[1][1][0][0] = new Block(c, (short)0_0011);
+		//c.data[0][0][1][0] = new Block(c, (short)0_0100);
+		//c.data[1][0][1][0] = new Block(c, (short)0_0101);
 		world.loaded.add(c);
 		//*/
 		
