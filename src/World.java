@@ -8,12 +8,14 @@ import java.util.TreeMap;
 
 public class World 
 {
+	int loaddistance = 3;
 	Runner parent;
-	ArrayList<Chunk> loaded;
+	Chunk[][][][] loaded;
 	ChunkLoader cl;
 	Player player;
 	ArrayList<BlockSide> existing; //a list of the sides that exist!
 	ArrayList<BlockSide> sides; //a list of the sides to render!
+	//Tree<Chunk> worldtree;
 	boolean removeBackFaces = false; //this doesn't belong here, but temporarily. Also it doesn't work.
 	//boolean removeTransparentBackFaces = true;
 	
@@ -21,11 +23,48 @@ public class World
 	{
 		//init included
 		parent = r;
-		loaded = new ArrayList<Chunk>();
+		loaded = new Chunk[loaddistance][loaddistance][loaddistance][loaddistance];
 		player = new Player(this);
 		existing = new ArrayList<BlockSide>(); 
 		sides = new ArrayList<BlockSide>(); 
 	}
+	
+	/*
+	public void addToTree(Chunk e, Tree<Chunk> tree)
+	{
+		if (tree == null)
+			tree = worldtree;
+		
+		if (tree == null)
+		{
+			worldtree = new Tree<Chunk>(e);
+			tree = worldtree;
+		}
+		
+		if (e.getPosition().compareTo((tree.head.getPosition())) < 0)
+		{
+			if (tree.leafs.size() > 0)
+			{
+				if (tree.leafs.get(0).head.world == null)
+					tree.setLeaf(0, e);
+				else 
+					addToTree(e, tree.leafs.get(0));
+			}
+			else
+				tree.addLeaf(e);
+		}
+		if (e.getPosition().compareTo((tree.head.getPosition())) > 0)
+		{
+			if (tree.leafs.size() > 1)
+				addToTree(e, tree.leafs.get(1));
+			
+			else if (tree.leafs.size() < 1)
+				tree.addLeaf(new Chunk(null, 0,0,0,0));
+			else
+				tree.addLeaf(e);
+		}
+	}
+	*/
 	
 	Point4D prevdir = new Point4D(0,0,0,0);
 	Point4D currdir = new Point4D(0,0,0,0);
@@ -42,39 +81,38 @@ public class World
 			return;
 		
 		//Collections.sort(loaded);
-		for (Chunk c : loaded)
+		for (int i = 0; i < loaddistance; i++)
 		{
-			c.prepareForRender();
+			for (int j = 0; j < loaddistance; j++)
+			{
+				for (int k = 0; k < loaddistance; k++)
+				{
+					for (int l = 0; l < loaddistance; l++)
+					{
+						loaded[i][j][k][l].prepareForRender();
+					}
+				}
+			}
 		}
-		trimSides();
+		//trimSides();
+		
+		//Tree<BlockSide> bsp = new Tree<BlockSide>();
 		
 		//if (sides.size() != 11)
 		//	System.out.println("Failed: "+sides.size());
 		
-		parent.curr = System.currentTimeMillis();
+		//parent.curr = System.currentTimeMillis();
 		//System.out.println("prep "+(parent.curr-parent.last));
-		parent.last = parent.curr;
+		//parent.last = parent.curr;
 		
-		Collections.sort(sides);
+		//Collections.sort(sides);
 		
-		parent.curr = System.currentTimeMillis();
+		//parent.curr = System.currentTimeMillis();
 		//System.out.println("sort "+(parent.curr-parent.last));
-		parent.last = parent.curr;
+		//parent.last = parent.curr;
 		
 		prevdir = currdir;
 		prevpos = currpos;
-	}
-	
-	public Chunk getChunk(int x, int y, int z, int w)
-	{
-		for (Chunk e : loaded)
-		{
-			if (e.x == x && e.y == y && e.z == z && e.w == w)
-			{
-				return e;
-			}
-		}
-		return null;
 	}
 	
 	//This function might not be used
@@ -122,6 +160,7 @@ public class World
         return res;
 	}
 	
+	/*
 	//takes the existing arraylist and converts it to the sides arraylist, trimming as it goes
 	public void trimSides()
 	{
@@ -218,7 +257,9 @@ public class World
 				
 				sides.add(e);
 				
-				/*
+				
+				
+				
 				//add sides in sorted order (attempt)
 				for (int  i = 0; i < sides.size(); i++)
 				{
@@ -239,7 +280,7 @@ public class World
 				//starting case
 				if (sides.size() == 0)
 					sides.add(e);
-				*/
+				
 				
 				
 				
@@ -260,9 +301,10 @@ public class World
 				visited.add(e);
 				sides.add(e);
 				*/
-			}
-		}
-	}
+			//}
+		//}
+	//}
+	
 
 	public int binarySearch(int startIndex, int endIndex, BlockSide key, ArrayList<BlockSide> array) 
 	{
@@ -310,7 +352,7 @@ class BlockSide implements Comparable
 		parent = p;
 		value = v;
 		
-		id = parent.getPosition().add(getOffset(false)).toString();
+		id = getPosition().toString();
 	}
 	
 	public Point4D getPosition()
@@ -328,8 +370,8 @@ class BlockSide implements Comparable
 		//player.pos.z -= player.movedamp * player.speed * delta * Math.cos(player.pitch) * Math.cos(player.yaw);
 		
 		//distance = -cos(pitch)*sin(yaw)*dx + sin(pitch)*dy + cos(pitch)*cos(yaw)*dz
-		Point4D point = parent.getPosition().add(getOffset(false));
-		Point4D other = ((BlockSide)o).parent.getPosition().add( ((BlockSide)o).getOffset(false) );
+		Point4D point = getPosition();
+		Point4D other = ((BlockSide)o).getPosition();
 		
 		
 		//double distance = -Math.cos(player.pitch)*Math.sin(player.yaw)*(point.x - player.pos.x) + Math.sin(player.pitch)*(point.y - player.pos.y) + Math.cos(player.pitch)*Math.cos(player.yaw)*(point.z - player.pos.z)						
@@ -369,5 +411,40 @@ class BlockSide implements Comparable
 			res.w = -parent.getPosition().w;
 		
 		return res;
+	}
+	
+	public int comparePlane(BlockSide other)
+	{
+		if (value == 0 || value == 1)
+		{
+			if (getPosition().x == other.getPosition().x)
+				return 0;
+			if (getPosition().x > other.getPosition().x)
+				return 1;
+			if (getPosition().x < other.getPosition().x)
+				return -1;
+			//parallel to y and z
+		}
+		if (value == 2 || value == 3)
+		{
+			if (getPosition().y == other.getPosition().y)
+				return 0;
+			if (getPosition().y > other.getPosition().y)
+				return 1;
+			if (getPosition().y < other.getPosition().y)
+				return -1;
+			//parallel to x and z
+		}
+		if (value == 4 || value == 5)
+		{
+			if (getPosition().z == other.getPosition().z)
+				return 0;
+			if (getPosition().z > other.getPosition().z)
+				return 1;
+			if (getPosition().z < other.getPosition().z)
+				return -1;
+			//parallel to x and y
+		}
+		return 0;
 	}
 }

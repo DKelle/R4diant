@@ -58,13 +58,20 @@ public class Block implements Comparable
 		
 		if (x == 7)
 		{
-			//check other chunk (x+1)
-			Chunk c = chunk.world.getChunk(chunk.x+1, chunk.y, chunk.z, chunk.w);
-			if (c != null)
+			if (chunk.ix+1 >= chunk.world.loaddistance)
 			{
-				if (c.data[0][y][z][w] != null)
+				sides += 1;
+			}
+			else
+			{
+				//check other chunk (x+1)
+				Chunk c = chunk.world.loaded[chunk.ix+1][chunk.iy][chunk.iz][chunk.iw];
+				if (c != null)
 				{
-					sides += 1;
+					if (c.data[0][y][z][w] != null)
+					{
+						sides += 1;
+					}
 				}
 			}
 		}
@@ -78,13 +85,20 @@ public class Block implements Comparable
 		
 		if (x == 0)
 		{
-			//check other chunk (x-1)
-			Chunk c = chunk.world.getChunk(chunk.x-1, chunk.y, chunk.z, chunk.w);
-			if (c != null)
+			if (chunk.ix-1 < 0)
 			{
-				if (c.data[7][y][z][w] != null)
+				sides += 2;
+			}
+			else
+			{
+				//check other chunk (x-1)
+				Chunk c = chunk.world.loaded[chunk.ix-1][chunk.iy][chunk.iz][chunk.iw];
+				if (c != null)
 				{
-					sides += 2;
+					if (c.data[7][y][z][w] != null)
+					{
+						sides += 2;
+					}
 				}
 			}
 		}
@@ -98,13 +112,20 @@ public class Block implements Comparable
 		
 		if (y == 7)
 		{
-			//check other chunk (y+1)
-			Chunk c = chunk.world.getChunk(chunk.x, chunk.y+1, chunk.z, chunk.w);
-			if (c != null)
+			if (chunk.iy+1 >= chunk.world.loaddistance)
 			{
-				if (c.data[x][0][z][w] != null)
+				sides += 4;
+			}
+			else
+			{
+				//check other chunk (y+1)
+				Chunk c = chunk.world.loaded[chunk.ix][chunk.iy+1][chunk.iz][chunk.iw];			
+				if (c != null)
 				{
-					sides += 4;
+					if (c.data[x][0][z][w] != null)
+					{
+						sides += 4;
+					}
 				}
 			}
 		}
@@ -118,13 +139,20 @@ public class Block implements Comparable
 		
 		if (y == 0)
 		{
-			//check other chunk (y-1)
-			Chunk c = chunk.world.getChunk(chunk.x, chunk.y-1, chunk.z, chunk.w);
-			if (c != null)
+			if (chunk.iy-1 < 0)
 			{
-				if (c.data[x][7][z][w] != null)
+				sides += 8;
+			}
+			else
+			{
+				//check other chunk (y-1)
+				Chunk c = chunk.world.loaded[chunk.ix][chunk.iy-1][chunk.iz][chunk.iw];
+				if (c != null)
 				{
-					sides += 8;
+					if (c.data[x][7][z][w] != null)
+					{
+						sides += 8;
+					}
 				}
 			}
 		}
@@ -138,13 +166,20 @@ public class Block implements Comparable
 		
 		if (z == 7)
 		{
-			//check other chunk (z+1)
-			Chunk c = chunk.world.getChunk(chunk.x, chunk.y, chunk.z+1, chunk.w);
-			if (c != null)
+			if (chunk.iz+1 >= chunk.world.loaddistance)
 			{
-				if (c.data[x][y][0][w] != null)
+				sides += 16;
+			}
+			else
+			{
+				//check other chunk (z+1)
+				Chunk c = chunk.world.loaded[chunk.ix][chunk.iy][chunk.iz+1][chunk.iw];
+				if (c != null)
 				{
-					sides += 16;
+					if (c.data[x][y][0][w] != null)
+					{
+						sides += 16;
+					}
 				}
 			}
 		}
@@ -158,13 +193,20 @@ public class Block implements Comparable
 		
 		if (z == 0)
 		{
-			//check other chunk (z-1)
-			Chunk c = chunk.world.getChunk(chunk.x, chunk.y, chunk.z-1, chunk.w);
-			if (c != null)
+			if (chunk.iz-1 < 0)
 			{
-				if (c.data[x][y][7][w] != null)
+				sides += 32;
+			}
+			else
+			{
+				//check other chunk (z-1)
+				Chunk c = chunk.world.loaded[chunk.ix][chunk.iy][chunk.iz-1][chunk.iw];
+				if (c != null)
 				{
-					sides += 32;
+					if (c.data[x][y][7][w] != null)
+					{
+						sides += 32;
+					}
 				}
 			}
 		}
@@ -178,13 +220,20 @@ public class Block implements Comparable
 		
 		if (w == 7)
 		{
-			//check other chunk (w+1)
-			Chunk c = chunk.world.getChunk(chunk.x, chunk.y, chunk.z, chunk.w+1);
-			if (c != null)
+			if (chunk.iw+1 >= chunk.world.loaddistance)
 			{
-				if (c.data[x][y][z][0] != null)
+				sides += 64;
+			}
+			else
+			{
+				//check other chunk (w+1)
+				Chunk c = chunk.world.loaded[chunk.ix][chunk.iy][chunk.iz][chunk.iw+1];
+				if (c != null)
 				{
-					sides += 64;
+					if (c.data[x][y][z][0] != null)
+					{
+						sides += 64;
+					}
 				}
 			}
 		}
@@ -198,13 +247,20 @@ public class Block implements Comparable
 		
 		if (w == 0)
 		{
-			//check other chunk (w-1)
-			Chunk c = chunk.world.getChunk(chunk.x, chunk.y, chunk.z, chunk.w-1);
-			if (c != null)
+			if (chunk.iw-1 < 0)
 			{
-				if (c.data[x][y][z][7] != null)
+				sides += 128;
+			}
+			else
+			{
+				//check other chunk (w-1)
+				Chunk c = chunk.world.loaded[chunk.ix][chunk.iy][chunk.iz][chunk.iw-1];
+				if (c != null)
 				{
-					sides += 128;
+					if (c.data[x][y][z][7] != null)
+					{
+						sides += 128;
+					}
 				}
 			}
 		}

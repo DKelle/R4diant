@@ -3,6 +3,7 @@ import org.lwjgl.input.Keyboard;
 
 public class Player extends Living
 {
+	double spawnx = 4, spawny = 12, spawnz = 4, spawnw = 4;
 	World world;
 	ChunkLoader cl;
 	float roll = 0;
@@ -20,16 +21,16 @@ public class Player extends Living
 	public Player(World w)
 	{
 		world = w;
+		spawn();
 		cl = new ChunkLoader(world, this);
 		world.cl = cl;
-		spawn();
 		speed =  5  * (1f/(1000f)); //5 meters per second
 		rotspeed = (float)(  90  * Math.PI/(180*1000)); //90 degrees per second
 	}
 	
 	public void spawn()
 	{
-		pos = new Point4D(8,5,8,0);
+		pos = new Point4D(spawnx,spawny,spawnz,spawnw);
 	}
 	
 	public void updatePos(){
@@ -46,15 +47,15 @@ public class Player extends Living
 		//return true if you can see a chunk (because otherwise it would be a waste of memory)
 		//very primitive, but it should at least save some time
 	}
-	public Chunk getChunk()
+	
+	public Chunk getChunkObject()
 	{
-		for (Chunk e : world.loaded)
-		{
-			if (e.x*8 <= pos.x && pos.x <= e.x*8+8 && e.y*8 <= pos.y && pos.y <= e.y*8+8 && e.z*8 <= pos.z && pos.z <= e.z*8+8 && e.w*8 <= pos.w && pos.w <= e.w*8+8)
-			{
-				return e;
-			}
-		}
-		return null;
+		return world.loaded[world.loaddistance/2][world.loaddistance/2][world.loaddistance/2][world.loaddistance/2];
+		//note: this assumes that the player stays at the center of the loaded chunks. Make sure this is true, or everything will die.
+	}
+	
+	public Point4D getChunkCoords()
+	{
+		return new Point4D(pos.x/8, pos.y/8, pos.z/8, pos.w/8);
 	}
 }

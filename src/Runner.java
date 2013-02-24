@@ -321,10 +321,8 @@ public class Runner
 				    }
 				}
 				
-				// keep quad on the screen
-				
 				//Checking for collisions.
-				
+				/*
 				tempX = (short)((int)(player.pos.x%8));
 				tempY = (short)((int)(player.pos.y%8));
 				tempZ = (short)((int)(player.pos.z%8));
@@ -431,6 +429,7 @@ public class Runner
 						canMoves = 0;
 					}
 				}
+				*/
 			/*	else{
 					//System.out.println("e = null");
 					velY = player.velocity;
@@ -591,7 +590,7 @@ public class Runner
 		GL11.glEnable(GL11.GL_TEXTURE_2D);
 		try 
 		{
-			terrain = TextureLoader.getTexture("PNG", ResourceLoader.getResourceAsStream("res/texture.png"));
+			terrain = TextureLoader.getTexture("PNG", ResourceLoader.getResourceAsStream("res/texture.png"), GL11.GL_NEAREST);
 		} 
 		catch (IOException e) 
 		{
@@ -647,66 +646,87 @@ public class Runner
 	public void drawDebug()
 	{
 		//For some reason this draws text
-			//GL11.glEnable(GL11.GL_TEXTURE_2D);
-			//GL11.glShadeModel(GL11.GL_SMOOTH);        
-			GL11.glDisable(GL11.GL_DEPTH_TEST);
-			GL11.glDisable(GL11.GL_LIGHTING);                    
-		 
-			GL11.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);                
-		    GL11.glClearDepth(1);                                       
+		//GL11.glEnable(GL11.GL_TEXTURE_2D);
+		//GL11.glShadeModel(GL11.GL_SMOOTH);        
+		GL11.glDisable(GL11.GL_DEPTH_TEST);
+		GL11.glDisable(GL11.GL_LIGHTING);                    
+	 
+		GL11.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);                
+	    GL11.glClearDepth(1);                                       
+	
+        //GL11.glEnable(GL11.GL_BLEND);
+	    //GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+	 
+        GL11.glViewport(0,0,800,600);
+		GL11.glMatrixMode(GL11.GL_MODELVIEW);
+	 
+		GL11.glMatrixMode(GL11.GL_PROJECTION);
+		GL11.glLoadIdentity();
+		GL11.glOrtho(0, 800, 600, 0, 1, -1);
+		GL11.glMatrixMode(GL11.GL_MODELVIEW);
+		GL11.glLoadIdentity();
+			
+		font.drawString(10, 10, "W: " + round(3,player.pos.w) );
+		font.drawString(10, 28, "X: " + round(3,player.pos.x) );
+		font.drawString(10, 46, "Y: " + round(3,player.pos.y) );
+		font.drawString(10, 64, "Z: " + round(3,player.pos.z) );
+		font.drawString(100, 10, "YAW: " + round(3,player.yaw));
+		font.drawString(100, 28, "PITCH: " + round(3,player.pitch));
+		font.drawString(100, 46, "ROLL: " + round(3,player.roll));
+		font.drawString(100, 64, "WANE: " + round(3,player.wane));
+			
+		//GL11.glDisable(GL11.GL_TEXTURE_2D);
 		
-	        //GL11.glEnable(GL11.GL_BLEND);
-		    //GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-		 
-	        GL11.glViewport(0,0,800,600);
-			GL11.glMatrixMode(GL11.GL_MODELVIEW);
-		 
-			GL11.glMatrixMode(GL11.GL_PROJECTION);
-			GL11.glLoadIdentity();
-			GL11.glOrtho(0, 800, 600, 0, 1, -1);
-			GL11.glMatrixMode(GL11.GL_MODELVIEW);
-			GL11.glLoadIdentity();
-				
-			font.drawString(10, 10, "W: " + round(3,player.pos.w) );
-			font.drawString(10, 28, "X: " + round(3,player.pos.x) );
-			font.drawString(10, 46, "Y: " + round(3,player.pos.y) );
-			font.drawString(10, 64, "Z: " + round(3,player.pos.z) );
-			font.drawString(100, 10, "YAW: " + round(3,player.yaw));
-			font.drawString(100, 28, "PITCH: " + round(3,player.pitch));
-			font.drawString(100, 46, "ROLL: " + round(3,player.roll));
-			font.drawString(100, 64, "WANE: " + round(3,player.wane));
-				
-			//GL11.glDisable(GL11.GL_TEXTURE_2D);
-			
-			GL11.glMatrixMode(GL11.GL_PROJECTION);
-			GL11.glLoadIdentity();
-			GLU.gluPerspective(45.0f, 4/3.0f, 0.1f, 1000);
-			GL11.glMatrixMode(GL11.GL_MODELVIEW);
-			GL11.glLoadIdentity();
-			
-			GL11.glEnable(GL11.GL_DEPTH_TEST);
-			GL11.glDepthFunc(GL11.GL_LEQUAL);
-			GL11.glHint(GL11.GL_PERSPECTIVE_CORRECTION_HINT, GL11.GL_NICEST);
-			
-			//initGL(); //DO NOT CALL THIS!
+		GL11.glMatrixMode(GL11.GL_PROJECTION);
+		GL11.glLoadIdentity();
+		GLU.gluPerspective(45.0f, 4/3.0f, 0.1f, 1000);
+		GL11.glMatrixMode(GL11.GL_MODELVIEW);
+		GL11.glLoadIdentity();
+		
+		GL11.glEnable(GL11.GL_DEPTH_TEST);
+		GL11.glDepthFunc(GL11.GL_LEQUAL);
+		GL11.glHint(GL11.GL_PERSPECTIVE_CORRECTION_HINT, GL11.GL_NICEST);
+		
+		//initGL(); //DO NOT CALL THIS!
 	}
 	
-	float prevalpha = 1.0f;
+	//float prevalpha = 1.0f;
 	
 	public void vertexBufferShit()
 	{
-		if (world.sides != null && world.sides.size() > 0)
-		{	
+		//if (world.sides != null && world.sides.size() > 0)
+		//{	
 			IntBuffer buffer = BufferUtils.createIntBuffer(1);
 			GL15.glGenBuffers(buffer);
 			int vertex_buffer_id = buffer.get(0);
 			
-			FloatBuffer vertexdata = BufferUtils.createFloatBuffer(world.sides.size()*4*9); //xyz rgba uv
+			int sidecount = 0;
+			for (int i = 0; i < world.loaddistance; i++)
+			{ 
+				for (int j = 0; j < world.loaddistance; j++)
+				{ 
+					for (int k = 0; k < world.loaddistance; k++)
+					{ 
+						for (int l = 0; l < world.loaddistance; l++)
+						{
+							sidecount += world.loaded[i][j][k][l].treesize;
+						}
+					}
+				}	
+			}
 			
+			FloatBuffer vertexdata = BufferUtils.createFloatBuffer(sidecount*4*9); //xyz rgba uv
+			
+			//dataIterate(world.worldtree, vertexdata);	
+			
+			iterativeLoad(vertexdata);
+			
+			/*
 			for (BlockSide e : world.sides)
 			{
 				loadDataFromBlockFace(e, vertexdata);
 			}
+			*/
 			
 			vertexdata.rewind();
 			GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vertex_buffer_id);
@@ -721,348 +741,54 @@ public class Runner
 		    org.newdawn.slick.Color.white.bind();
 		    terrain.bind();
 		    
-		    GL11.glDrawArrays(GL11.GL_QUADS, 0, world.sides.size()*4);
+		    GL11.glDrawArrays(GL11.GL_QUADS, 0, sidecount*4);
+		//}
+	}
+	
+	public void iterativeLoad(FloatBuffer vertexdata)
+	{
+		//Render things in front of the player, farthest to nearest
+		for (int chunkx = 0; chunkx < world.loaddistance; chunkx++)
+		{
+			for (int chunky = 0; chunky < world.loaddistance; chunky++)
+			{
+				for (int chunkz = 0; chunkz < world.loaddistance; chunkz++)
+				{
+					for (int chunkw = 0; chunkw < world.loaddistance; chunkw++)
+					{
+						//if (!player.isInView(world.loaded[chunkx][chunky][chunkz][chunkw]))
+						//	continue;
+						
+						//all of the following are chunks inside the player's view frustum
+						world.loaded[chunkx][chunky][chunkz][chunkw].loadFromTree(null, vertexdata);
+					}
+				}
+			}
 		}
 	}
 	
-	//CUSTOM COLORS *******
 	/*
-	public void loadDataFromBlockFace(BlockSide side, FloatBuffer list)
+	public void dataIterate(Tree<Chunk> tree, FloatBuffer vertexdata)
 	{
-		//loads data about the face into the buffer arrays
-		Point4D p = side.parent.getPosition();
-		float alpha = alphaFunction(p);
-		
-		float[] tc = side.parent.getTextureCoordinates(side.value);
-		
-		if (side.value == 2)
+		//loadDataFromBlockFace(e, vertexdata);
+		if (tree.leafs.size() == 0)
 		{
-			list.put(new Float(p.x+1));
-			list.put(new Float(p.y+1));
-			list.put(new Float(p.z));
-			
-			//normal here (x, y, z)
-			
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(0.5));
-			list.put(new Float(alpha));
-			
-			list.put(tc[0]);
-			list.put(tc[1]);
-			
-			
-			list.put(new Float(p.x));
-			list.put(new Float(p.y+1));
-			list.put(new Float(p.z));
-			
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(0.5));
-			list.put(new Float(alpha));
-			
-			list.put(tc[2]);
-			list.put(tc[3]);
-			
-			
-			list.put(new Float(p.x));
-			list.put(new Float(p.y+1));
-			list.put(new Float(p.z+1));
-			
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(0.5));
-			list.put(new Float(alpha));
-			
-			list.put(tc[4]);
-			list.put(tc[5]);
-			
-			
-			list.put(new Float(p.x+1));
-			list.put(new Float(p.y+1));
-			list.put(new Float(p.z+1));
-			
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(0.5));
-			list.put(new Float(alpha));
-			
-			list.put(tc[6]);
-			list.put(tc[7]);
+			loadRecursive(tree.head, );
 		}
 		
-		if (side.value == 3)
+		if (tree.head.getPosition().compareTo(player.pos) > 0)
 		{
-			list.put(new Float(p.x+1));
-			list.put(new Float(p.y));
-			list.put(new Float(p.z+1));
-			
-			list.put(new Float(1));
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(alpha));
-			
-			list.put(tc[0]);
-			list.put(tc[1]);
-			
-			
-			list.put(new Float(p.x));
-			list.put(new Float(p.y));
-			list.put(new Float(p.z+1));
-			
-			list.put(new Float(1));
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(alpha));
-			
-			list.put(tc[2]);
-			list.put(tc[3]);
-			
-			
-			list.put(new Float(p.x));
-			list.put(new Float(p.y));
-			list.put(new Float(p.z));
-			
-			list.put(new Float(1));
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(alpha));
-			
-			list.put(tc[4]);
-			list.put(tc[5]);
-			
-			
-			list.put(new Float(p.x+1));
-			list.put(new Float(p.y));
-			list.put(new Float(p.z));
-			
-			list.put(new Float(1));
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(alpha));
-			
-			list.put(tc[6]);
-			list.put(tc[7]);
+			dataIterate(tree.leafs.get(0), vertexdata);
+		}
+		if (tree.head.getPosition().compareTo(player.pos) < 0)
+		{
+			dataIterate(tree.leafs.get(1), vertexdata);
 		}
 		
-		if (side.value == 4)
-		{
-			list.put(new Float(p.x+1));
-			list.put(new Float(p.y+1));
-			list.put(new Float(p.z+1));
-			
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(alpha));
-			
-			list.put(tc[0]);
-			list.put(tc[1]);
-			
-			
-			list.put(new Float(p.x));
-			list.put(new Float(p.y+1));
-			list.put(new Float(p.z+1));
-			
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(alpha));
-			
-			list.put(tc[2]);
-			list.put(tc[3]);
-			
-			
-			list.put(new Float(p.x));
-			list.put(new Float(p.y));
-			list.put(new Float(p.z+1));
-			
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(alpha));
-			
-			list.put(tc[4]);
-			list.put(tc[5]);
-			
-			
-			list.put(new Float(p.x+1));
-			list.put(new Float(p.y));
-			list.put(new Float(p.z+1));
-			
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(alpha));
-			
-			list.put(tc[6]);
-			list.put(tc[7]);
-		}
-		
-		if (side.value == 5)
-		{
-			list.put(new Float(p.x+1));
-			list.put(new Float(p.y));
-			list.put(new Float(p.z));
-			
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(1));
-			list.put(new Float(alpha));
-			
-			list.put(tc[0]);
-			list.put(tc[1]);
-			
-			
-			list.put(new Float(p.x));
-			list.put(new Float(p.y));
-			list.put(new Float(p.z));
-			
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(1));
-			list.put(new Float(alpha));
-			
-			list.put(tc[2]);
-			list.put(tc[3]);
-			
-			
-			list.put(new Float(p.x));
-			list.put(new Float(p.y+1));
-			list.put(new Float(p.z));
-			
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(1));
-			list.put(new Float(alpha));
-			
-			list.put(tc[4]);
-			list.put(tc[5]);
-			
-			
-			list.put(new Float(p.x+1));
-			list.put(new Float(p.y+1));
-			list.put(new Float(p.z));
-			
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(1));
-			list.put(new Float(alpha));
-			
-			list.put(tc[6]);
-			list.put(tc[7]);
-		}
-		
-		if (side.value == 1)
-		{
-			list.put(new Float(p.x));
-			list.put(new Float(p.y+1));
-			list.put(new Float(p.z+1));
-			
-			list.put(new Float(0.5));
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(alpha));
-			
-			list.put(tc[0]);
-			list.put(tc[1]);
-			
-			
-			list.put(new Float(p.x));
-			list.put(new Float(p.y+1));
-			list.put(new Float(p.z));
-			
-			list.put(new Float(0.5));
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(alpha));
-			
-			list.put(tc[2]);
-			list.put(tc[3]);
-			
-			
-			list.put(new Float(p.x));
-			list.put(new Float(p.y));
-			list.put(new Float(p.z));
-			
-			list.put(new Float(0.5));
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(alpha));
-			
-			list.put(tc[4]);
-			list.put(tc[5]);
-			
-			
-			list.put(new Float(p.x));
-			list.put(new Float(p.y));
-			list.put(new Float(p.z+1));
-			
-			list.put(new Float(0.5));
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(alpha));
-			
-			list.put(tc[6]);
-			list.put(tc[7]);
-		}
-		
-		if (side.value == 0)
-		{
-			list.put(new Float(p.x+1));
-			list.put(new Float(p.y+1));
-			list.put(new Float(p.z));
-			
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(alpha));
-			
-			list.put(tc[0]);
-			list.put(tc[1]);
-			
-			
-			list.put(new Float(p.x+1));
-			list.put(new Float(p.y+1));
-			list.put(new Float(p.z+1));
-			
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(alpha));
-			
-			list.put(tc[2]);
-			list.put(tc[3]);
-			
-			
-			list.put(new Float(p.x+1));
-			list.put(new Float(p.y));
-			list.put(new Float(p.z+1));
-			
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(alpha));
-			
-			list.put(tc[4]);
-			list.put(tc[5]);
-			
-			
-			list.put(new Float(p.x+1));
-			list.put(new Float(p.y));
-			list.put(new Float(p.z));
-			
-			list.put(new Float(1));
-			list.put(new Float(0.5));
-			list.put(new Float(1));
-			list.put(new Float(alpha));
-			
-			list.put(tc[6]);
-			list.put(tc[7]);
-		}
 	}
 	*/
 	
+	/*
 	//ALL WHITE ***** (textures actually look correct)
 	public void loadDataFromBlockFace(BlockSide side, FloatBuffer list)
 	{
@@ -1413,7 +1139,9 @@ public class Runner
 		prevalpha = alpha;
 		return alpha;
 	}
+	*/
 	
+	/*
 	public void renderBlockFace(BlockSide side)
 	{
 		Point4D p = side.parent.getPosition();
@@ -1481,6 +1209,7 @@ public class Runner
 		
 		GL11.glTranslatef(-(float)p.x -0.5f, -(float)p.y -0.5f, -(float)p.z -0.5f);
 	}
+	*/
  
 	public static void main(String[] argv) {
 		Runner runner = new Runner();
