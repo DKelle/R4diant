@@ -742,6 +742,9 @@ public class Runner
 		    terrain.bind();
 		    
 		    GL11.glDrawArrays(GL11.GL_QUADS, 0, sidecount*4);
+		    
+		    //Finished rendering
+		    int a = 0;
 		//}
 	}
 	

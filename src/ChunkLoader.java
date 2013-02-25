@@ -92,7 +92,8 @@ public class ChunkLoader
 			}
 		}
 		
-		//This is extremely messy and I have no idea what it does since you never use the found variable
+		Chunk[][][][] new_crap = new Chunk[load_dis][load_dis][load_dis][load_dis];
+		//i'm using a new array so that i not only get the correct chunks, but that the chunks are in the correct position in the array
 		if ( world.loaded.length != 0 )
 		{
 			for ( int i = 0; i < world.loaded.length; i++ )
@@ -103,7 +104,6 @@ public class ChunkLoader
 					{
 						for ( int l = 0; l < world.loaded.length; l++ )
 						{
-							boolean found = false;
 							for ( int a = 0; a < world.loaded.length; a++ )
 							{
 								for ( int b = 0; b < world.loaded.length; b++ )
@@ -112,29 +112,27 @@ public class ChunkLoader
 									{
 										for ( int d = 0; d < world.loaded.length; d++ )
 										{
+											//if we find one of the needed chunks already loaded, we take away that chunk from the need array
 											if ( world.loaded[a][b][c][d] != null && need[i][j][k][l] != null
 													&& world.loaded[a][b][c][d].x == need[i][j][k][l].x
 													&& world.loaded[a][b][c][d].y == need[i][j][k][l].y
 													&& world.loaded[a][b][c][d].z == need[i][j][k][l].z
 													&& world.loaded[a][b][c][d].w == need[i][j][k][l].w)
+											{
 												need[i][j][k][l] = null;
-											if ( world.loaded[i][j][k][l] != null && need[a][b][c][d] != null
-													&& world.loaded[i][j][k][l].x == need[a][b][c][d].x
-													&& world.loaded[i][j][k][l].y == need[a][b][c][d].y
-													&& world.loaded[i][j][k][l].z == need[a][b][c][d].z
-													&& world.loaded[i][j][k][l].w == need[a][b][c][d].w)
-												found = true;
+												//then we put it in the correct place in the new array
+												new_crap[i][j][k][l] = world.loaded[a][b][c][d];
+											}
 										}
 									}
 								}
 							}
-							if (!found)
-								world.loaded[i][j][k][l] = null;
 						}
 					}
 				}
 			}
 		}
+		world.loaded = new_crap;
 		
 		for( int i = 0; i < load_dis; i++)
 		{

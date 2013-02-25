@@ -56,6 +56,6 @@ public class Player extends Living
 	
 	public Point4D getChunkCoords()
 	{
-		return new Point4D(pos.x/8, pos.y/8, pos.z/8, pos.w/8);
+		return new Point4D((int)pos.x/8, (int)pos.y/8, (int)pos.z/8, (int)pos.w/8);
 	}
 }

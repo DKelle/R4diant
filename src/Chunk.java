@@ -222,7 +222,7 @@ public class Chunk implements Comparable
 			}
 			
 		}
-		else if (world.player.pos.compareTo(tree.head.get(0).getPosition()) == 1)
+		else if (world.player.pos.compareTo(tree.head.get(0).getPosition()) < 0)
 		{
 			//the object is in front of the player (I think)
 			//call this function on the objects behind it
@@ -241,7 +241,7 @@ public class Chunk implements Comparable
 			}
 			//?
 		}
-		else if (world.player.pos.compareTo(tree.head.get(0).getPosition()) == -1)
+		else if (world.player.pos.compareTo(tree.head.get(0).getPosition()) > 0)
 		{
 			//the object is behind the player (I think)
 			//call this function on the objects in front of it
