@@ -1,13 +1,17 @@
 import java.util.ArrayList;
-import java.util.Collections;
 
 
 public class Block implements Comparable
 {
 	Chunk chunk;
+	/** The position, (512*w + 64*z + 8*y + x) */
 	short pos;
+	/** Will be the temperature */
 	short temp;
-	short id;
+	//default for existing
+	//by the way, id's now start at 1. 0 is air, or "nothing", if you will (no block)
+	short id = 1;
+	/** The sides. 1 if obstructed, 0 if open */
 	byte sides;
 	byte light; //If I need it?
 	ArrayList<Byte> elements;
@@ -23,13 +27,20 @@ public class Block implements Comparable
 	//final byte lightStrength;
 	
 	
-	
+	/**
+	 * Constructs a blank block. Probably shouldn't use this one.
+	 */
 	public Block()
 	{
 		elements = new ArrayList<Byte>();
 		ores = new ArrayList<Ore>();
 	}
 	
+	/**
+	 * Constructs a block in a certain chunk and position in the chunk
+	 * @param ch - the chunk
+	 * @param position - the position, (512*w + 64*z + 8*y + x)
+	 */
 	public Block(Chunk ch, short position)
 	{
 		elements = new ArrayList<Byte>();
@@ -38,6 +49,9 @@ public class Block implements Comparable
 		pos = position;
 	}
 	
+	/**
+	 * This is not the best constructor, to be honest.
+	 */
 	public Block(Chunk ch, Point4D p)
 	{
 		elements = new ArrayList<Byte>();
@@ -46,6 +60,10 @@ public class Block implements Comparable
 		pos = (short)( ((short)p.x) | ((short)p.y << 3) | ((short)p.z << 6) | ((short)p.w << 9) );
 	}
 	
+	/**
+	 * Checks the sides around the block and sets the sides variable to the value.
+	 * Sides are marked as 1 if there's something in the way and 0 otherwise.
+	 */
 	public void checkSides()
 	{
 		//check the sides
@@ -60,7 +78,7 @@ public class Block implements Comparable
 		{
 			if (chunk.ix+1 >= chunk.world.loaddistance)
 			{
-				sides += 1;
+				//sides += 1;
 			}
 			else
 			{
@@ -87,7 +105,7 @@ public class Block implements Comparable
 		{
 			if (chunk.ix-1 < 0)
 			{
-				sides += 2;
+				//sides += 2;
 			}
 			else
 			{
@@ -114,7 +132,7 @@ public class Block implements Comparable
 		{
 			if (chunk.iy+1 >= chunk.world.loaddistance)
 			{
-				sides += 4;
+				//sides += 4;
 			}
 			else
 			{
@@ -141,7 +159,7 @@ public class Block implements Comparable
 		{
 			if (chunk.iy-1 < 0)
 			{
-				sides += 8;
+				//sides += 8;
 			}
 			else
 			{
@@ -168,7 +186,7 @@ public class Block implements Comparable
 		{
 			if (chunk.iz+1 >= chunk.world.loaddistance)
 			{
-				sides += 16;
+				//sides += 16;
 			}
 			else
 			{
@@ -195,7 +213,7 @@ public class Block implements Comparable
 		{
 			if (chunk.iz-1 < 0)
 			{
-				sides += 32;
+				//sides += 32;
 			}
 			else
 			{
@@ -222,7 +240,7 @@ public class Block implements Comparable
 		{
 			if (chunk.iw+1 >= chunk.world.loaddistance)
 			{
-				sides += 64;
+				//sides += 64;
 			}
 			else
 			{
@@ -249,7 +267,7 @@ public class Block implements Comparable
 		{
 			if (chunk.iw-1 < 0)
 			{
-				sides += 128;
+				//sides += 128;
 			}
 			else
 			{
@@ -274,11 +292,18 @@ public class Block implements Comparable
 		
 	}
 	
+	/**
+	 * Does nothing yet.
+	 */
 	public void getLight()
 	{
 		//calculate lighting (if I need it?)
 	}
 	
+	/**
+	 * Does nothing yet.
+	 * @param ore - the ore to add
+	 */
 	public void addOre(Ore ore)
 	{
 		ores.add(ore);
@@ -319,7 +344,10 @@ public class Block implements Comparable
 	{
 		return 0;
 	}
-
+	
+	/**
+	 * Compares by distance to the player
+	 */
 	public int compareTo(Object o) 
 	{
 		//sort by xyzw position
@@ -335,6 +363,10 @@ public class Block implements Comparable
 		return (int)(-1000*1000*(getPlayerDistance()-((Block)o).getPlayerDistance()));
 	}
 	
+	/**
+	 * Gets the absolute position
+	 * @return the absolute position
+	 */
 	public Point4D getPosition()
 	{
 		Point4D res = new Point4D(chunk.x*8+(pos & 7), chunk.y*8+((pos >> 3) & 7), chunk.z*8+((pos >> 6) & 7), chunk.w*8+((pos >> 9) & 7) );
@@ -342,11 +374,20 @@ public class Block implements Comparable
 		return res;
 	}
 	
+	/**
+	 * Gets the distance to the player
+	 * @return the distance to the player
+	 */
 	public double getPlayerDistance()
 	{
 		return getPosition().dist(chunk.world.player.pos);
 	}
 	
+	/**
+	 * Gets the texture coordinates based on the id
+	 * @param side - the side of the block to use
+	 * @return the texture coordinates
+	 */
 	public float[] getTextureCoordinates(byte side)
 	{
 		if (side >= 0 && side <= 5)

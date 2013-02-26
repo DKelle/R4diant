@@ -1,18 +1,44 @@
 
+
 public class Point4D implements Comparable
 {
+	/** The x, y, z, and w points */
 	double x = 0, y = 0, z = 0, w = 0;
 	
+	/**
+	 * Constructs a point with four dimensions at the origin
+	 */
 	public Point4D() {}
+	
+	/**
+	 * Constructs a new point with four dimensions (double)
+	 * @param a - the x coordinate
+	 * @param b - the y coordinate
+	 * @param c - the z coordinate
+	 * @param d - the w coordinate
+	 */
 	public Point4D(double a, double b, double c, double d)
 	{
 		x = a; y = b; z = c; w = d;
 	}
+	
+	/**
+	 * Constructs a new point with four dimensions (intger)
+	 * @param a - the x coordinate
+	 * @param b - the y coordinate
+	 * @param c - the z coordinate
+	 * @param d - the w coordinate
+	 */
 	public Point4D(int a, int b, int c, int d)
 	{
 		x = (double)a; y = (double)b; z = (double)c; w = (double)d;
 	}
 	
+	/**
+	 * Gets the angles that this point would look to face the other point
+	 * @param p - the other point
+	 * @return the angles from this point to the other (yaw, pitch, wane)
+	 */
 	public double[] angles(Point4D p)
 	{
 		if (p != null)
@@ -51,11 +77,20 @@ public class Point4D implements Comparable
 		return a;
 	}
 	
+	/**
+	 * Gets the point that is this one reflected about the origin
+	 * @return the reflection of this point about the origin
+	 */
 	public Point4D negate()
 	{
 		return new Point4D(-x, -y, -z, -w);
 	}
 	
+	/**
+	 * Gets the vector from this point to the other
+	 * @param p - the other point
+	 * @return a point that represents the vector
+	 */
 	public Point4D direction(Point4D p)
 	{
 		if (p != null)
@@ -67,6 +102,11 @@ public class Point4D implements Comparable
 		return this;
 	}
 	
+	/**
+	 * Gets the distance, in four dimensions, to the other point
+	 * @param p - the other point
+	 * @return the distance
+	 */
 	public double dist(Point4D p)
 	{
 		if (p != null)
@@ -80,12 +120,20 @@ public class Point4D implements Comparable
 		return alt;
 	}
 	
+	/**
+	 * Gets the distance from the origin to this point
+	 * @return the magnitude of this point
+	 */
 	public double dist()
 	{
 		double d = Math.sqrt( x*x + y*y + z*z + w*w );
 		return d;
 	}
 	
+	/**
+	 * Reset this point to a new point
+	 * @param p - the new point
+	 */
 	public void set(Point4D p)
 	{
 		if (p != null)
@@ -97,6 +145,11 @@ public class Point4D implements Comparable
 		}
 	}
 	
+	/**
+	 * Add a point to this one
+	 * @param p - the other point
+	 * @return the result of adding the two points
+	 */
 	public Point4D add(Point4D p)
 	{
 		Point4D res = new Point4D(this.x, this.y, this.z, this.w);
@@ -110,7 +163,30 @@ public class Point4D implements Comparable
 		return res;
 	}
 	
-	public Point4D dot(Point4D p)
+	/**
+	 * Subtracts the other point from this point
+	 * @param p - the other point
+	 * @return the result of subtracting the two points
+	 */
+	public Point4D sub(Point4D p)
+	{
+		Point4D res = new Point4D(this.x, this.y, this.z, this.w);
+		if (p != null)
+		{
+			res.x -= p.x;
+			res.y -= p.y;
+			res.z -= p.z;
+			res.w -= p.w;
+		}	
+		return res;
+	}
+	
+	/**
+	 * Multiplies this point by another point
+	 * @param p - the other point
+	 * @return the result of multiplying the two points
+	 */
+	public Point4D mul(Point4D p)
 	{
 		Point4D res = new Point4D(this.x, this.y, this.z, this.w);
 		if (p != null)
@@ -123,6 +199,11 @@ public class Point4D implements Comparable
 		return res;
 	}
 	
+	/**
+	 * Divides this point by another point
+	 * @param p - the other point
+	 * @return the result of dividing the two points
+	 */
 	public Point4D div(Point4D p)
 	{
 		Point4D res = new Point4D(this.x, this.y, this.z, this.w);
@@ -136,6 +217,11 @@ public class Point4D implements Comparable
 		return res;
 	}
 	
+	/**
+	 * Raises this point to a power
+	 * @param amt - the power to raise it to
+	 * @return the result of the operation
+	 */
 	public Point4D pow(double amt)
 	{
 		Point4D res = new Point4D(this.x, this.y, this.z, this.w);
@@ -146,6 +232,9 @@ public class Point4D implements Comparable
 		return res;
 	}
 	
+	/**
+	 * Converts this point to a string (x, y, z, w)
+	 */
 	public String toString()
 	{	
 		double tx = (x * 100)/100;
@@ -156,7 +245,9 @@ public class Point4D implements Comparable
 		return "( "+tx+", "+ty+", "+tz+", "+tw+" )";
 	}
 	
-	
+	/**
+	 * Compares this point to another point based on xyzw position
+	 */
 	public int compareTo(Object o) 
 	{
 		if ( w == ((Point4D)o).w )

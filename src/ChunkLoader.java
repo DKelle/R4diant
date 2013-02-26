@@ -1,8 +1,8 @@
 import java.io.*;
 import java.util.*;
 
-//Loads the chunks based on the player's position
 
+//Loads the chunks based on the player's position
 public class ChunkLoader
 {
 	World world;
@@ -24,9 +24,15 @@ public class ChunkLoader
 	double[] z_shift;
 	double[] w_shift;
 	
-	public ChunkLoader(World w, Player p)
+	/**
+	 * Constructs a new Chunk Loader which generates the chunks around the player
+	 * @param w - the world reference
+	 * @param p - the player reference
+	 * @param seed - the seed for generation
+	 */
+	public ChunkLoader(World w, Player p, int seed)
 	{
-		r = new Random(1010101);
+		r = new Random(seed);
 		num_things = 1 + r.nextInt(5);
 		magnitude = new int[num_things];
 		x_spread = new double[num_things];
@@ -67,6 +73,9 @@ public class ChunkLoader
 		loadChunks();
 	}
 	
+	/**
+	 * Decides whether to load more chunks, and does so, based on the player's position.
+	 */
 	public void checkStatus()
 	{
 		//This is too much. You should be comparing their chunk. I'll change that.
@@ -75,7 +84,8 @@ public class ChunkLoader
 			loadChunks();
 		}
 	}
-	public void loadChunks()
+	
+	private void loadChunks()
 	{
 		Point4D[][][][] need = new Point4D[load_dis][load_dis][load_dis][load_dis];
 		for( int i = 0; i < load_dis; i++)
@@ -150,6 +160,7 @@ public class ChunkLoader
 		old_pos = new Point4D((int)player.pos.x,(int)player.pos.y,(int)player.pos.z,(int)player.pos.w);
 		old_playerchunk = new Point4D((int)player.pos.x/8,(int)player.pos.y/8,(int)player.pos.z/8,(int)player.pos.w/8);
 	}
+	
 	public void getChunk( Point4D p, int ii, int jj, int kk, int ll )
 	{
 		File get = new File(path+"chunk_"+(int)p.x+"_"+(int)p.y+"_"+(int)p.z+"_"+(int)p.w+".txt");
@@ -158,7 +169,7 @@ public class ChunkLoader
 			addChunk((int)p.x,(int)p.y,(int)p.z,(int)p.w,ii,jj,kk,ll);
 		}
 		try{
-			Scanner read = new Scanner(get);
+			Reader read = new BufferedReader(new InputStreamReader(new FileInputStream(get), "US-ASCII"));
 			Chunk ch = new Chunk(world,(int)p.x,(int)p.y,(int)p.z,(int)p.w,ii,jj,kk,ll);
 			for( int x = 0; x < 8; x++ )
 			{
@@ -168,8 +179,13 @@ public class ChunkLoader
 					{
 						for ( int w = 0; w < 8; w++ )
 						{
-							if (read.nextInt() == 1)
-								ch.data[x][y][z][w] = new Block(ch, (short)((512*w)+(64*z)+(8*y)+x));
+							int id = (int)read.read();
+							if (id > 0)
+							{
+								Block b = new Block(ch, (short)((512*w)+(64*z)+(8*y)+x));
+								b.id = (short)id;
+								ch.data[x][y][z][w] = b;
+							}	
 						}
 					}
 				}
@@ -183,7 +199,8 @@ public class ChunkLoader
 			System.out.println("wat");
 		}
 	}
-	public void addChunk( int a, int b, int c, int d, int ii, int jj, int kk, int ll )
+	
+	private void addChunk( int a, int b, int c, int d, int ii, int jj, int kk, int ll )
 	{	
 		Chunk ch = new Chunk(world,a,b,c,d,ii,jj,kk,ll);
 		for( int w = 0; w < 8; w++)
@@ -220,7 +237,8 @@ public class ChunkLoader
 			}
 		}
 	}
-	public int generateY(int a, int b, int c, int d, int x, int z, int w )
+	
+	private int generateY(int a, int b, int c, int d, int x, int z, int w )
 	{
 		int y = 0;
 		x = x+a*8;
